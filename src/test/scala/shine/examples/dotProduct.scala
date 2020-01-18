@@ -5,8 +5,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA.Types.AddressSpace._
 import shine.DPIA.FunctionalPrimitives._
-import shine.DPIA.Semantics.OperationalSemantics.{ArrayData, FloatData}
-import shine.DPIA.Types.Kind.NatIdentifierMaker
+import shine.DPIA.Semantics.OperationalSemantics.FloatData
 import shine.DPIA._
 import shine.OpenCL.FunctionalPrimitives.{MapGlobal, OpenCLReduceSeq, To}
 import shine.OpenCL.KernelGenerator
@@ -15,17 +14,22 @@ class dotProduct extends test_util.Tests {
 
   test("dot-product") {
     /* javascript:
-    let dot = (a, b) => zip(a, b).map(x => x[0] * x[1]).reduce((result, adder) => result + adder, 0)
+    const zip = (arr, ...arrs) => {
+      return arr.map((val, i) => arrs.reduce((a, arr) => [...a, arr[i]], [val]));
+    }
+    const dot = (a, b) => zip(a, b).map(x => x[0] * x[1]).reduce((result, adder) => result + adder, 0)
+    dot([1,2,3],[4,5,6])
+    => 32
      */
 
     /*
     [1,2,3],[4,5,6] // zippen
-    [[1,4],[2,5],[3,6]] // map reduce durch mul
-    [4,10,18] // reduce sum // [[4][10][18]] vorher flatten?
+    [[1,4],[2,5],[3,6]] // map mit pair mul
+    [4,10,18] // reduce sum
     [32]
      */
 
-    // def dotproduct = fun((v,w) => reduce(+, 0) <<: map(*) <<: zip(v,w))
+    // def dotproduct = fun((v,w) => reduce(+, 0) <<: map(*) <<: zip(v,w)) // rise
 
 
     //def add(a: float, b: float):float = a + b
@@ -47,17 +51,12 @@ class dotProduct extends test_util.Tests {
         MapSeq(n, PairType(float, float), float, mul,
           Zip(n, float, float, vecA, vecB))))))
 
-    println(ProgramGenerator.makeCode(dot).code) p
+    println(ProgramGenerator.makeCode(dot).code)
 
     /*
-        println(add(1,2))
-        println(mul(1,2))
-        println(dot(3, float, Array(1,2,3), Array(4,5,6)))
-
-        dot(3, float, Array(1,2,3), Array(4,5,6)) shouldBe 32
-        add(8.0f,2.0f) shouldBe 10
-        mul(8,2) shouldBe 16
-        */
+    println(add(1,2))
+    add(8.0f,2.0f) shouldBe 10
+    */
   }
 
   test("dotproduct OpenCL") {
@@ -77,7 +76,7 @@ class dotProduct extends test_util.Tests {
       OpenCLReduceSeq(n, Global, float, float, add, Literal(FloatData(0.0f)),
         //Falls ein new without address space fehler auftaucht: fehlt ein To um ein MapSeq (outermost häufig wichtigste)?
         To(Global, ArrayType(n, float), MapGlobal(0)(n, PairType(float, float), float, mul,
-          Zip(n, float, float, vecA, vecB)))))))
+          Zip(n, float, float, vecA, vecB))), false))))
 
     println(KernelGenerator.makeCode(dot).code)
   }
