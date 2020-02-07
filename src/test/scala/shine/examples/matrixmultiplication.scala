@@ -28,7 +28,7 @@ class matrixmultiplication extends test_util.Tests {
     val columnB = Identifier(freshName("columnB"), ExpType(ArrayType(n, float), read))
     val rowA = Identifier(freshName("rowA"), ExpType(ArrayType(n, float), read))
     val matrixA = Identifier(freshName("MatrixA"), ExpType(ArrayType(n, ArrayType(n,float)),read))
-    val matrixB = Identifier(freshName("MatrixA"), ExpType(ArrayType(n, ArrayType(n,float)),read))
+    val matrixB = Identifier(freshName("MatrixB"), ExpType(ArrayType(n, ArrayType(n,float)),read))
 
     val mul = Lambda[ExpType, ExpType](x, BinOp(Operators.Binary.MUL, Fst(float, float, x), Snd(float, float, x)))
     val add = Lambda[ExpType, FunType[ExpType, ExpType]](y, Lambda[ExpType, ExpType](z, BinOp(Operators.Binary.ADD, y, z)))
