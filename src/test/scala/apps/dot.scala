@@ -1,6 +1,6 @@
 package apps
 
-import shine.DPIA.Types.{read, write, ExpType}
+import shine.DPIA.Types.{ExpType, read, write}
 import rise.core.DSL._
 import rise.core.types._
 import rise.core.HighLevelConstructs.reorderWithStride
@@ -210,4 +210,5 @@ class dot extends shine.test_util.Tests {
       gen.OpenCLKernel(dotProduct2)
     }
   }
+
 }

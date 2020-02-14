@@ -27,7 +27,7 @@ object gen {
 
   def OpenCLKernel(e: rise.core.Expr, name: String = "foo"): shine.OpenCL.KernelNoSizes = {
     val dpia_e = toDPIA(e)
-    val p = shine.OpenCL.KernelGenerator.makeCode(dpia_e, name)
+    val p = shine.OpenCL.KernelGenerator().makeCode(dpia_e, name)
     println(p.code)
     SyntaxChecker.checkOpenCL(p.code)
     p
@@ -42,7 +42,7 @@ object gen {
                   (e: rise.core.Expr, name: String): shine.OpenCL.KernelWithSizes = {
     val dpia_e = toDPIA(e)
     val (localSize, globalSize) = localGlobalSize(dpia_e)
-    val p = shine.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(dpia_e, name)
+    val p = shine.OpenCL.KernelGenerator().makeCode(localSize, globalSize)(dpia_e, name)
     println(p.code)
     SyntaxChecker.checkOpenCL(p.code)
     p

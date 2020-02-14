@@ -1148,7 +1148,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                  })
                })
              })
-         case otherwise => throw new Exception(s"Don't know how to print $otherwise")
+         case otherwise =>
+           throw new Exception(s"Don't know how to print $otherwise")
        }
   }
 

@@ -2,7 +2,7 @@ package shine.OpenCL
 
 import arithexpr.arithmetic._
 import opencl.executor._
-import shine.C.AST.ParamDecl
+import shine.C.AST.{Node, ParamDecl}
 import shine.DPIA.Phrases.Identifier
 import shine.DPIA.Types._
 import shine.DPIA._
@@ -19,11 +19,13 @@ case class Kernel(decls: Seq[C.AST.Decl],
                   kernel: OpenCL.AST.KernelDecl,
                   outputParam: Identifier[AccType],
                   inputParams: Seq[Identifier[ExpType]],
-                  intermediateParams: Seq[Identifier[VarType]]) {
+                  intermediateParams: Seq[Identifier[VarType]],
+                  printer: Node => String
+                  ) {
 
-  def code: String = decls.map(OpenCL.AST.Printer(_)).mkString("\n") +
+  def code: String = decls.map(printer(_)).mkString("\n") +
     "\n\n" +
-    OpenCL.AST.Printer(kernel)
+    printer(kernel)
 
   /** This method will return a Scala function which executed the kernel via OpenCL and returns its
   // result and the time it took to execute the kernel.

@@ -147,7 +147,7 @@ class asum extends shine.test_util.TestsWithExecutor {
     test("Intel derived no warp compiles to syntactically correct OpenCL code") {
       val phrase = shine.DPIA.fromRise(infer(intelDerivedNoWarp1))
       val N = phrase.t.asInstanceOf[shine.DPIA.`(nat)->:`[ExpType]].x
-      val p = OpenCL.KernelGenerator
+      val p = OpenCL.KernelGenerator()
         .makeCode(LocalSize(128), GlobalSize(N))(phrase, "KERNEL")
       println(p.code)
       SyntaxChecker.checkOpenCL(p.code)
@@ -179,7 +179,7 @@ class asum extends shine.test_util.TestsWithExecutor {
     ) {
       val phrase = shine.DPIA.fromRise(infer(intelDerived2))
       val N = phrase.t.asInstanceOf[shine.DPIA.`(nat)->:`[ExpType]].x
-      val p = OpenCL.KernelGenerator
+      val p = OpenCL.KernelGenerator()
         .makeCode(LocalSize(128), GlobalSize(N))(phrase, "KERNEL")
       println(p.code)
       SyntaxChecker.checkOpenCL(p.code)
@@ -215,7 +215,7 @@ class asum extends shine.test_util.TestsWithExecutor {
     test("Nvidia kernel derived compiles to syntactically correct OpenCL code") {
       val phrase = shine.DPIA.fromRise(infer(nvidiaDerived1))
       val N = phrase.t.asInstanceOf[shine.DPIA.`(nat)->:`[ExpType]].x
-      val p = OpenCL.KernelGenerator
+      val p = OpenCL.KernelGenerator()
         .makeCode(LocalSize(128), GlobalSize(N))(phrase, "KERNEL")
       println(p.code)
       SyntaxChecker.checkOpenCL(p.code)
@@ -258,7 +258,7 @@ class asum extends shine.test_util.TestsWithExecutor {
     ) {
       val phrase = shine.DPIA.fromRise(infer(amdNvidiaDerived2))
       val N = phrase.t.asInstanceOf[shine.DPIA.`(nat)->:`[ExpType]].x
-      val p = OpenCL.KernelGenerator
+      val p = OpenCL.KernelGenerator()
         .makeCode(LocalSize(128), GlobalSize(N))(phrase, "KERNEL")
       println(p.code)
       SyntaxChecker.checkOpenCL(p.code)
@@ -296,7 +296,7 @@ class asum extends shine.test_util.TestsWithExecutor {
     test("AMD kernel derived compiles to syntactically correct OpenCL code") {
       val phrase = shine.DPIA.fromRise(infer(amdDerived1))
       val N = phrase.t.asInstanceOf[shine.DPIA.`(nat)->:`[ExpType]].x
-      val p = OpenCL.KernelGenerator
+      val p = OpenCL.KernelGenerator()
         .makeCode(LocalSize(128), GlobalSize(N))(phrase, "KERNEL")
       println(p.code)
       SyntaxChecker.checkOpenCL(p.code)
