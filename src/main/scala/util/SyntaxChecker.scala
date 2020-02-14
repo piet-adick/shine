@@ -25,8 +25,4 @@ object SyntaxChecker {
   def checkOpenCL(code: String): Unit = {
     apply(code, ".cl", "-Xclang -finclude-default-header -cl-std=CL1.2")
   }
-
-  def checkCuda(code: String): Unit = {
-    apply(code, ".cu", "-Xclang -finclude-default-header -")
-  }
 }
