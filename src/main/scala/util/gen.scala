@@ -48,7 +48,7 @@ object gen {
     p
   }
 
-  def cuKernel(e: rise.core.Expr, name: String = "foo"): shine.OpenCL.KernelNoSizes = {
+  def cuKernel(e: rise.core.Expr, name: String = "foo"): shine.cuda.KernelNoSizes = {
     val dpia_e = toDPIA(e)
     val p = shine.cuda.KernelGenerator().makeCode(dpia_e, name)
     println(p.code)
