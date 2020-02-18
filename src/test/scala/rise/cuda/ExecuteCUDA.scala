@@ -6,8 +6,6 @@ import rise.core.DSL._
 import rise.core.types._
 import util.gen
 
-import scala.language.{postfixOps, reflectiveCalls}
-
 class ExecuteCUDA extends shine.test_util.TestsWithExecutor {
   test("Running a simple kernel with generic input size") {
     val f: Expr = nFun(n => fun(ArrayType(n, int))(

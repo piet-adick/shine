@@ -42,7 +42,7 @@ lazy val shine = (project in file("."))
   )
 
 lazy val executor   = (project in file("lib/executor"))
-lazy val CUexecutor   = (project in file("lib/yacx"))
+lazy val CUexecutor = (project in file("lib/yacx"))
 
 lazy val rise       = (project in file("lib/rise"))
 
