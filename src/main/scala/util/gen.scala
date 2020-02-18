@@ -47,4 +47,12 @@ object gen {
     SyntaxChecker.checkOpenCL(p.code)
     p
   }
+
+  def cuKernel(e: rise.core.Expr, name: String = "foo"): shine.OpenCL.KernelNoSizes = {
+    val dpia_e = toDPIA(e)
+    val p = shine.cuda.KernelGenerator().makeCode(dpia_e, name)
+    println(p.code)
+    SyntaxChecker.checkOpenCL(p.code)
+    p
+  }
 }
