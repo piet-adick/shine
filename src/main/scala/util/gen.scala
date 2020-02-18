@@ -52,7 +52,7 @@ object gen {
     val dpia_e = toDPIA(e)
     val p = shine.cuda.KernelGenerator().makeCode(dpia_e, name)
     println(p.code)
-    SyntaxChecker.checkOpenCL(p.code)
+    // SyntaxChecker.checkCUDA(p.code)
     p
   }
 }
