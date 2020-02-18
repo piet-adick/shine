@@ -194,7 +194,8 @@ case class Kernel(decls: Seq[C.AST.Decl],
 
   private def createGlobalArg(array: Array[Float]): GlobalArg = {
     println(s"Allocated global argument with ${array.length * 4} bytes")
-    GlobalArg.createInput(array)
+    GlobalArg.crea
+    teInput(array)
   }
 
   private def createGlobalArg(array: Array[Int]): GlobalArg = {

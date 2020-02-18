@@ -316,9 +316,9 @@ case class Kernel(decls: Seq[C.AST.Decl],
   private def castToOutputType[R](dt: DataType, output: KernelArg): R = {
     assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])
     (getOutputType(dt) match {
-      case shine.DPIA.Types.int => output.asIntArray()
-      case shine.DPIA.Types.f32 => output.asFloatArray()
-      case shine.DPIA.Types.f64 => output.asDoubleArray()
+      case shine.DPIA.Types.int => output.asInstanceOf[IntArg].asIntArray()
+      case shine.DPIA.Types.f32 => output.asInstanceOf[FloatArg].asFloatArray()
+      case shine.DPIA.Types.f64 => output.asInstanceOf[DoubleArg].asDoubleArray()
       case _ => throw new IllegalArgumentException("Return type of the given lambda expression " +
         "not supported: " + dt.toString)
     }).asInstanceOf[R]
