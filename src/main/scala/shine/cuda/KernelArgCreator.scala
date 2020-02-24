@@ -1,10 +1,11 @@
 package shine.cuda
 
-import yacx.{ByteArg, DoubleArg, FloatArg, HalfArg, IntArg, KernelArg, LongArg, ShortArg}
+import yacx.{ArrayArg, ByteArg, DoubleArg, FloatArg, HalfArg, IntArg, KernelArg, LongArg, ShortArg}
 import shine.DPIA.Types.{ArrayType, DataType, DataTypeIdentifier, DepArrayType, IndexType, NatToDataApply, NatToDataLambda, PairType, ScalarType, VectorType, int}
 
 
 object KernelArgCreator {
+  // TODO
   def createLocalArg(sizeInByte: Long): KernelArg = {
     println(s"Allocated local argument with $sizeInByte bytes")
     throw new Exception("Not implemented")
@@ -14,7 +15,7 @@ object KernelArgCreator {
     //of the Kernel will be set as "cl::__local(sizeInByte)"
   }
 
-  def createGlobalArg(numberOfElements: Int, dt : DataType): KernelArg = {
+  def createOutputArg(numberOfElements: Int, dt : DataType): ArrayArg = {
     (getOutputType(dt) match {
       case shine.DPIA.Types.i8 =>
         println(s"Allocated global byte-argument with $numberOfElements bytes")
@@ -42,114 +43,45 @@ object KernelArgCreator {
     })
   }
 
-  def createGlobalArg(array: Array[Byte]): ByteArg = {
-    println(s"Allocated global byte-argument with ${array.length * 1} bytes")
-    ByteArg.create(array:_*)
-  }
-
-  def createGlobalArg(array: Array[Short]): ShortArg = {
-    println(s"Allocated global short-argument with ${array.length * 2} bytes")
-    ShortArg.create(array:_*)
-  }
-
-  def createGlobalArg(array: Array[Int]): IntArg = {
-    println(s"Allocated global int-argument with ${array.length * 4} bytes")
-    IntArg.create(array:_*)
-  }
-
-  def createGlobalArg(array: Array[Long]): LongArg = {
-    println(s"Allocated global long-argument with ${array.length * 8} bytes")
-    LongArg.create(array:_*)
-  }
-
-  def createGlobalArgHalf(array: Array[Float]): HalfArg = {
-    println(s"Allocated global half-argument with ${array.length * 2} bytes")
-    HalfArg.create(array:_*)
-  }
-
-  def createGlobalArg(array: Array[Float]): FloatArg = {
-    println(s"Allocated global float-argument with ${array.length * 4} bytes")
-    FloatArg.create(array:_*)
-  }
-
-  def createGlobalArg(array: Array[Double]): DoubleArg = {
-    println(s"Allocated global double-argument with ${array.length * 8} bytes")
-    DoubleArg.create(array:_*)
-  }
-
-  def createValueArg(value: Byte): KernelArg = {
-    println(s"Allocated value byte-argument with 1 bytes")
-    ByteArg.createValue(value)
-  }
-
-  def createValueArg(value: Short): KernelArg = {
-    println(s"Allocated value short-argument with 2 bytes")
-    ShortArg.createValue(value)
-  }
-
-  def createValueArg(value: Int): KernelArg = {
-    println(s"Allocated value int-argument with 4 bytes")
-    IntArg.createValue(value)
-  }
-
-  def createValueArg(value: Long): KernelArg = {
-    println(s"Allocated value long-argument with 8 bytes")
-    LongArg.createValue(value)
-  }
-
-  def createValueArgHalf(value: Float): KernelArg = {
-    println(s"Allocated value half-argument with 2 bytes")
-    HalfArg.createValue(value)
-  }
-
-  def createValueArg(value: Float): KernelArg = {
-    println(s"Allocated value float-argument with 4 bytes")
-    FloatArg.createValue(value)
-  }
-
-  def createValueArg(value: Double): KernelArg = {
-    println(s"Allocated value double-argument with 8 bytes")
-    DoubleArg.createValue(value)
-  }
-
-  def createInputArgFromScalaValue(arg: Any): yacx.KernelArg = {
+  def createInputArg(arg: Any): yacx.KernelArg = {
     arg match {
-      //Not sure about the abbreviation in cases (exist case b:?):
+      // TODO: Not sure about the abbreviation in cases (exist case b:?)
+      // Does this work?
       case  b: Byte => createValueArg(b)
-      case ab: Array[Byte] => createGlobalArg(ab)
-      case ab: Array[Array[Byte]] => createGlobalArg(ab.flatten)
-      case ab: Array[Array[Array[Byte]]] => createGlobalArg(ab.flatten.flatten)
-      case ab: Array[Array[Array[Array[Byte]]]] => createGlobalArg(ab.flatten.flatten.flatten)
+      case ab: Array[Byte] => createArrayArg(ab)
+      case ab: Array[Array[Byte]] => createArrayArg(ab.flatten)
+      case ab: Array[Array[Array[Byte]]] => createArrayArg(ab.flatten.flatten)
+      case ab: Array[Array[Array[Array[Byte]]]] => createArrayArg(ab.flatten.flatten.flatten)
 
       case  s: Short => createValueArg(s)
-      case as: Array[Short] => createGlobalArg(as)
-      case as: Array[Array[Short]] => createGlobalArg(as.flatten)
-      case as: Array[Array[Array[Short]]] => createGlobalArg(as.flatten.flatten)
-      case as: Array[Array[Array[Array[Short]]]] => createGlobalArg(as.flatten.flatten.flatten)
+      case as: Array[Short] => createArrayArg(as)
+      case as: Array[Array[Short]] => createArrayArg(as.flatten)
+      case as: Array[Array[Array[Short]]] => createArrayArg(as.flatten.flatten)
+      case as: Array[Array[Array[Array[Short]]]] => createArrayArg(as.flatten.flatten.flatten)
 
       case  i: Int => createValueArg(i)
-      case ai: Array[Int] => createGlobalArg(ai)
-      case ai: Array[Array[Int]] => createGlobalArg(ai.flatten)
-      case ai: Array[Array[Array[Int]]] => createGlobalArg(ai.flatten.flatten)
-      case ai: Array[Array[Array[Array[Int]]]] => createGlobalArg(ai.flatten.flatten.flatten)
+      case ai: Array[Int] => createArrayArg(ai)
+      case ai: Array[Array[Int]] => createArrayArg(ai.flatten)
+      case ai: Array[Array[Array[Int]]] => createArrayArg(ai.flatten.flatten)
+      case ai: Array[Array[Array[Array[Int]]]] => createArrayArg(ai.flatten.flatten.flatten)
 
       case  l: Long => createValueArg(l)
-      case al: Array[Long] => createGlobalArg(al)
-      case al: Array[Array[Long]] => createGlobalArg(al.flatten)
-      case al: Array[Array[Array[Long]]] => createGlobalArg(al.flatten.flatten)
-      case al: Array[Array[Array[Array[Long]]]] => createGlobalArg(al.flatten.flatten.flatten)
+      case al: Array[Long] => createArrayArg(al)
+      case al: Array[Array[Long]] => createArrayArg(al.flatten)
+      case al: Array[Array[Array[Long]]] => createArrayArg(al.flatten.flatten)
+      case al: Array[Array[Array[Array[Long]]]] => createArrayArg(al.flatten.flatten.flatten)
 
       case  f: Float => createValueArg(f)
-      case af: Array[Float] => createGlobalArg(af)
-      case af: Array[Array[Float]] => createGlobalArg(af.flatten)
-      case af: Array[Array[Array[Float]]] => createGlobalArg(af.flatten.flatten)
-      case af: Array[Array[Array[Array[Float]]]] => createGlobalArg(af.flatten.flatten.flatten)
+      case af: Array[Float] => createArrayArg(af)
+      case af: Array[Array[Float]] => createArrayArg(af.flatten)
+      case af: Array[Array[Array[Float]]] => createArrayArg(af.flatten.flatten)
+      case af: Array[Array[Array[Array[Float]]]] => createArrayArg(af.flatten.flatten.flatten)
 
       case  d: Double => createValueArg(d)
-      case ad: Array[Double] => createGlobalArg(ad)
-      case ad: Array[Array[Double]] => createGlobalArg(ad.flatten)
-      case ad: Array[Array[Array[Double]]] => createGlobalArg(ad.flatten.flatten)
-      case ad: Array[Array[Array[Array[Double]]]] => createGlobalArg(ad.flatten.flatten.flatten)
+      case ad: Array[Double] => createArrayArg(ad)
+      case ad: Array[Array[Double]] => createArrayArg(ad.flatten)
+      case ad: Array[Array[Array[Double]]] => createArrayArg(ad.flatten.flatten)
+      case ad: Array[Array[Array[Array[Double]]]] => createArrayArg(ad.flatten.flatten.flatten)
 
       case p: Array[(_, _)] => p.head match {
         case (_: Int, _: Float) =>
@@ -167,7 +99,7 @@ object KernelArgCreator {
     }
   }
 
-  def castToOutputType[R](dt: DataType, output: KernelArg): R = {
+  def asArray[R](dt: DataType, output: KernelArg): R = {
     assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])
     (getOutputType(dt) match {
       case shine.DPIA.Types.i8 => output.asInstanceOf[ByteArg].asByteArray()
@@ -205,5 +137,76 @@ object KernelArgCreator {
       getOutputType(elemType)
     case DepArrayType(_, _) | _: NatToDataApply =>
       throw new Exception("This should not happen")
+  }
+
+  private def createArrayArg(array: Array[Byte]): ByteArg = {
+    println(s"Allocated global byte-argument with ${array.length * 1} bytes")
+    ByteArg.create(array:_*)
+  }
+
+  private def createArrayArg(array: Array[Short]): ShortArg = {
+    println(s"Allocated global short-argument with ${array.length * 2} bytes")
+    ShortArg.create(array:_*)
+  }
+
+  private def createArrayArg(array: Array[Int]): IntArg = {
+    println(s"Allocated global int-argument with ${array.length * 4} bytes")
+    IntArg.create(array:_*)
+  }
+
+  private def createArrayArg(array: Array[Long]): LongArg = {
+    println(s"Allocated global long-argument with ${array.length * 8} bytes")
+    LongArg.create(array:_*)
+  }
+
+  // TODO: use this and createValueArgHalf. Not sure how a half-Array can be passed to this class
+  private def createArrayArgHalf(array: Array[Float]): HalfArg = {
+    println(s"Allocated global half-argument with ${array.length * 2} bytes")
+    HalfArg.create(array:_*)
+  }
+
+  private def createArrayArg(array: Array[Float]): FloatArg = {
+    println(s"Allocated global float-argument with ${array.length * 4} bytes")
+    FloatArg.create(array:_*)
+  }
+
+  private def createArrayArg(array: Array[Double]): DoubleArg = {
+    println(s"Allocated global double-argument with ${array.length * 8} bytes")
+    DoubleArg.create(array:_*)
+  }
+
+  private def createValueArg(value: Byte): KernelArg = {
+    println(s"Allocated value byte-argument with 1 bytes")
+    ByteArg.createValue(value)
+  }
+
+  private def createValueArg(value: Short): KernelArg = {
+    println(s"Allocated value short-argument with 2 bytes")
+    ShortArg.createValue(value)
+  }
+
+  private def createValueArg(value: Int): KernelArg = {
+    println(s"Allocated value int-argument with 4 bytes")
+    IntArg.createValue(value)
+  }
+
+  private def createValueArg(value: Long): KernelArg = {
+    println(s"Allocated value long-argument with 8 bytes")
+    LongArg.createValue(value)
+  }
+
+  private def createValueArgHalf(value: Float): KernelArg = {
+    println(s"Allocated value half-argument with 2 bytes")
+    HalfArg.createValue(value)
+  }
+
+  private def createValueArg(value: Float): KernelArg = {
+    println(s"Allocated value float-argument with 4 bytes")
+    FloatArg.createValue(value)
+  }
+
+  private def createValueArg(value: Double): KernelArg = {
+    println(s"Allocated value double-argument with 8 bytes")
+    DoubleArg.createValue(value)
   }
 }

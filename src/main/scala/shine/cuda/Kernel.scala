@@ -107,7 +107,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
         kernelArgs.toArray: _*
       )
 
-      val output = castToOutputType[F#R](outputParam.`type`.dataType, outputArg)
+      val output = asArray[F#R](outputParam.`type`.dataType, outputArg)
 
       (output, TimeSpan.inMilliseconds(runtime.getTotal().asInstanceOf[Double]))
     }
@@ -153,9 +153,11 @@ case class Kernel(decls: Seq[C.AST.Decl],
   private def createKernelArgs(arguments: Seq[Argument],
                                sizeVariables: Map[Nat, Nat]): (KernelArg, List[KernelArg]) = {
     println(sizeVariables)
+
     //Now create the output kernel arg
     println(s"Create output argument")
     val kernelOutput = createOutputKernelArg(sizeVariables)
+
     //Finally, generate the input kernel args
     println(s"Create input arguments")
     val kernelArguments = createInputKernelArgs(arguments, sizeVariables)
@@ -206,7 +208,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
             case OpenCL.AST.PointerType(a, _, _) => a match {
               case AddressSpace.Private => throw new Exception("'Private memory' is an invalid memory for cuda parameter")
               case AddressSpace.Local => createLocalArg(actualSize)
-              case AddressSpace.Global => createGlobalArg(actualSize, arg.identifier.t.dataType)
+              case AddressSpace.Global => createOutputArg(actualSize, arg.identifier.t.dataType)
               case AddressSpace.Constant => ???
               case AddressSpaceIdentifier(_) => throw new Exception("This shouldn't happen")
             }
@@ -221,7 +223,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
       case arg :: remainingArgs =>
         val kernelArg = arg.argValue match {
           //We have a scala value - this is an input argument
-          case Some(scalaValue) => createInputArgFromScalaValue(scalaValue)
+          case Some(scalaValue) => createInputArg(scalaValue)
           //No scala value - this is an intermediate argument
           case None => createIntermediateArg(arg, sizeVariables)
         }
@@ -233,7 +235,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
     val rawSize = sizeInElements(this.outputParam.t.dataType).value
     val cleanSize = ArithExpr.substitute(rawSize, sizeVariables)
     Try(cleanSize.evalInt) match {
-      case Success(actualSize) => createGlobalArg(actualSize, this.outputParam.t.dataType)
+      case Success(actualSize) => createOutputArg(actualSize, this.outputParam.t.dataType)
       case Failure(_) => throw new Exception(s"Could not evaluate $cleanSize")
     }
   }
