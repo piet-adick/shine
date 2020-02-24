@@ -24,7 +24,7 @@ class Printer extends shine.OpenCL.AST.Printer {
   }
 
   override def printKernelDecl(k: KernelDecl): Unit = {
-    print("__global__")
+    print("extern \"C\" __global__")
     println("")
     print(s"void ${k.name}(")
     k.params.foreach(p => {

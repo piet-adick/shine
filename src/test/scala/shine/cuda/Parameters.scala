@@ -1,13 +1,15 @@
-import rise.core.DSL.{fun, mapSeq, nFun}
-import rise.core.types.{ArrayType, VectorType, f32}
+package shine.cuda
+
+import rise.core.DSL.fun
+import rise.core.types.f32
 import util.gen
 
 class Parameters extends shine.test_util.Tests {
-  test("Output scalar") {
+  test("Output scalar OpenCL") {
     gen.OpenCLKernel(fun(f32)(vs => vs))
   }
 
-  test("Output scalar") {
+  test("Output scalar CUDA") {
     gen.cuKernel(fun(f32)(vs => vs))
   }
 }

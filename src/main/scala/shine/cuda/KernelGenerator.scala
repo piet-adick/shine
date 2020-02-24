@@ -11,7 +11,7 @@ import shine.DPIA.Types.{AccType, BasePhraseTypes, CommType, ExpType, NatKind, P
 import shine.OpenCL.AST.RequiredWorkGroupSize
 import shine.OpenCL.CodeGeneration.HoistMemoryAllocations.AllocationInfo
 import shine.OpenCL.CodeGeneration.{AdaptKernelBody, AdaptKernelParameters, HoistMemoryAllocations}
-import shine.OpenCL.{FlagPrivateArrayLoops, GlobalSize, InjectWorkItemSizes, KernelNoSizes, KernelWithSizes, LocalSize}
+import shine.OpenCL.{FlagPrivateArrayLoops, GlobalSize, InjectWorkItemSizes, LocalSize}
 import shine.{C, OpenCL, cuda}
 
 import scala.collection.{Map, Seq}
