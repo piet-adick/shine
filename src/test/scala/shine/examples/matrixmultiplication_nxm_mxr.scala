@@ -8,10 +8,10 @@ import shine.DPIA.Semantics.OperationalSemantics.FloatData
 import shine.DPIA._
 import shine.OpenCL.FunctionalPrimitives.{OpenCLReduceSeq, To}
 import shine.OpenCL._
-import shine.cuda.primitives.functional.MapThreads
+import shine.cuda.primitives.functional.{MapGrid, MapThreads}
 import shine.test_util
 
-class matrixmultiplication_nxm_mxr extends test_util.Tests {
+class matrixmultiplication_nxm_mxr extends test_util.TestsWithYACX {
 
   test("matrixMult") {
 
@@ -95,7 +95,7 @@ class matrixmultiplication_nxm_mxr extends test_util.Tests {
     println(ProgramGenerator.makeCode(gemm, "gemm").code)
   }
 
-  test("matrixMult OpenCl") {
+  test("matrixMult CUDA") {
 
 
     // def dotproduct = fun((v,w) => reduce(+, 0) <<: map(*) <<: zip(v,w)) // rise
@@ -129,7 +129,7 @@ class matrixmultiplication_nxm_mxr extends test_util.Tests {
         matrixA, Lambda[ExpType, ExpType](matrixB,
           MapThreads('x')(n, ArrayType(m,f32), ArrayType(r,f32),
             Lambda[ExpType, ExpType](columnB,
-              MapThreads('y')(r, ArrayType(m,f32), f32,
+              MapSeq(r, ArrayType(m,f32), f32,
                 dotproduct,
                 Transpose(m, r, f32,matrixB))),
             matrixA
@@ -139,14 +139,14 @@ class matrixmultiplication_nxm_mxr extends test_util.Tests {
     val kernel = shine.cuda.KernelGenerator.apply().makeCode(matrixMult, "matrixMult")
     println("CODE:")
     println(kernel.code)
-    val scalaFun = kernel.as[ScalaFunction`(`Int `,` Int `,` Int `,` scala.Array[scala.Array[Int]]`,` scala.Array[scala.Array[Int]]`)=>`scala.Array[scala.Array[Int]]].withSizes(LocalSize(1), GlobalSize(1))
+    val scalaFun = kernel.as[ScalaFunction`(`Int `,` Int `,` Int `,` scala.Array[scala.Array[Float]]`,` scala.Array[scala.Array[Float]]`)=>`scala.Array[Float]].withSizes(LocalSize(1), GlobalSize(1))
 
-    val vecAArray = scala.Array(scala.Array(1,1), scala.Array(1,1))
-    val vecBArray = scala.Array(scala.Array(1,1), scala.Array(1,1))
+    val vecAArray = scala.Array(scala.Array(1f,1), scala.Array(1f,1))
+    val vecBArray = scala.Array(scala.Array(1f,1), scala.Array(1f,1))
 
     val (result, time) = scalaFun(2 `,` 2 `,` 2 `,` vecAArray `,` vecBArray)
     println(time)
 
-    println(result(0)(0))
+    println(result(0))
   }
 }
