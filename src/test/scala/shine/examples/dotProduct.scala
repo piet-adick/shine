@@ -1,17 +1,17 @@
 package shine.examples
 
-import opencl.executor.Executor
 import shine.C.ProgramGenerator
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA.FunctionalPrimitives._
 import shine.DPIA.Semantics.OperationalSemantics.FloatData
 import shine.DPIA._
-import shine.OpenCL.FunctionalPrimitives.{MapGlobal, OpenCLReduceSeq, To}
+import shine.OpenCL.FunctionalPrimitives.{OpenCLReduceSeq, To}
 import shine.OpenCL._
 import shine.test_util
+import util.SyntaxChecker
 
-class dotProduct extends test_util.Tests {
+class dotProduct extends test_util.TestsWithExecutor {
 
   test("dot-product") {
     /* javascript:
@@ -76,14 +76,13 @@ class dotProduct extends test_util.Tests {
       //Wird entsprechendes OpenCL Pattern verwendet?
       OpenCLReduceSeq(n, shine.DPIA.Types.AddressSpace.Global, f32, f32, add, Literal(FloatData(0.0f)),
         //Falls ein new without address space fehler auftaucht: fehlt ein To um ein MapSeq (outermost häufig wichtigste)?
-        To(shine.DPIA.Types.AddressSpace.Global, ArrayType(n, f32), MapGlobal(0)(n, PairType(f32, f32), f32, mul,
+        To(shine.DPIA.Types.AddressSpace.Global, ArrayType(n, f32), MapSeq(n, PairType(f32, f32), f32, mul,
           Zip(n, f32, f32, vecA, vecB))), false))))
 
-    Executor.loadLibrary()
-    Executor.init()
-
-    val kernel = KernelGenerator.apply().makeCode(dot, "dot-product")
+    val kernel = KernelGenerator.apply().makeCode(dot, "dotProduct")
+    println("CODE:")
     println(kernel.code)
+    SyntaxChecker.checkOpenCL(kernel.code)
     val scalaFun = kernel.as[ScalaFunction`(`Int `,` scala.Array[Float]`,` scala.Array[Float]`)=>`Float].withSizes(LocalSize(1), GlobalSize(1))
 
     val vecAArray = scala.Array(1F,2F,3F,4F)
