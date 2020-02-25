@@ -25,6 +25,12 @@ class CodeGenerator(override val decls: CCodeGen.Declarations,
                     override val ranges: CCodeGen.Ranges)
   extends OclCodeGen(decls, ranges) {
 
+  override def updatedRanges(
+    key: String,
+    value: arithexpr.arithmetic.Range
+  ): CodeGenerator =
+    new CodeGenerator(decls, ranges.updated(key, value))
+
   override def cmd(phrase: Phrase[CommType], env: Environment): Stmt = {
     phrase match {
       case f@CudaParFor(n, dt, a, Lambda(i, Lambda(o, p)), _, _, _) =>
@@ -56,9 +62,15 @@ class CodeGenerator(override val decls: CCodeGen.Declarations,
 
       applySubstitutions(n, env.identEnv) |> (n => {
 
-        val init = OpenCL.AST.VarDecl(cI.name, C.AST.Type.int, AddressSpace.Private, init = Some(C.AST.ArithmeticExpr(range.start)))
-        val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
-        val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + range.step))
+        val init =
+          OpenCL.AST.VarDecl(
+            cI.name, C.AST.Type.int, AddressSpace.Private,
+            init = Some(C.AST.ArithmeticExpr(range.start)))
+        val cond =
+          C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
+        val increment =
+          C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) +
+            range.step))
 
         Phrase.substitute(a `@` i, `for` = o, `in` = p) |> (p =>
 
@@ -66,12 +78,16 @@ class CodeGenerator(override val decls: CCodeGen.Declarations,
 
             range.numVals match {
               // iteration count is 0 => skip body; no code to be emitted
-              case Cst(0) => C.AST.Comment("iteration count is 0, no loop emitted")
+              case Cst(0) =>
+                C.AST.Comment("iteration count is 0, no loop emitted")
               // iteration count is 1 => no loop
               case Cst(1) =>
                 C.AST.Stmts(C.AST.Stmts(
                   C.AST.Comment("iteration count is exactly 1, no loop emitted"),
-                  C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(f.init))))),
+                  C.AST.DeclStmt(C.AST.VarDecl(
+                    cI.name,
+                    C.AST.Type.int,
+                    init = Some(C.AST.ArithmeticExpr(f.init))))),
                   updatedGen.cmd(p, env))
               /* FIXME?
             case _ if (range.start.min.min == Cst(0) && range.stop == Cst(1)) ||
