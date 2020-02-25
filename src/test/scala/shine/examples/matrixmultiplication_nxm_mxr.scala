@@ -8,7 +8,7 @@ import shine.DPIA.Semantics.OperationalSemantics.FloatData
 import shine.DPIA._
 import shine.OpenCL.FunctionalPrimitives.{OpenCLReduceSeq, To}
 import shine.OpenCL._
-import shine.cuda.primitives.functional.{MapGrid, MapThreads}
+import shine.cuda.primitives.functional.{MapThreads}
 import shine.test_util
 
 class matrixmultiplication_nxm_mxr extends test_util.TestsWithYACX {
@@ -129,7 +129,7 @@ class matrixmultiplication_nxm_mxr extends test_util.TestsWithYACX {
         matrixA, Lambda[ExpType, ExpType](matrixB,
           MapThreads('x')(n, ArrayType(m,f32), ArrayType(r,f32),
             Lambda[ExpType, ExpType](columnB,
-              MapSeq(r, ArrayType(m,f32), f32,
+              MapThreads('y')(r, ArrayType(m,f32), f32,
                 dotproduct,
                 Transpose(m, r, f32,matrixB))),
             matrixA
