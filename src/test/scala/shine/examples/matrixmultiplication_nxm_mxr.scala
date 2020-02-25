@@ -3,12 +3,12 @@ package shine.examples
 import shine.C.ProgramGenerator
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
-import shine.DPIA.Types.AddressSpace._
 import shine.DPIA.FunctionalPrimitives._
 import shine.DPIA.Semantics.OperationalSemantics.FloatData
 import shine.DPIA._
-import shine.OpenCL.FunctionalPrimitives.{MapGlobal, OpenCLReduceSeq, To}
-import shine.OpenCL.KernelGenerator
+import shine.OpenCL.FunctionalPrimitives.{OpenCLReduceSeq, To}
+import shine.OpenCL._
+import shine.cuda.primitives.functional.MapThreads
 import shine.test_util
 
 class matrixmultiplication_nxm_mxr extends test_util.Tests {
@@ -119,22 +119,34 @@ class matrixmultiplication_nxm_mxr extends test_util.Tests {
     val add = Lambda[ExpType, FunType[ExpType, ExpType]](y, Lambda[ExpType, ExpType](z, BinOp(Operators.Binary.ADD, y, z)))
 
     val dotproduct = Lambda[ExpType, ExpType](rowA,
-      OpenCLReduceSeq(m, Global, f32, f32, add, Literal(FloatData(0.0f)),
-        To(Global, ArrayType(m, f32),
-          MapGlobal(0)(m, PairType(f32, f32), f32, mul,
+      OpenCLReduceSeq(m, shine.DPIA.Types.AddressSpace.Global, f32, f32, add, Literal(FloatData(0.0f)),
+        To(shine.DPIA.Types.AddressSpace.Global, ArrayType(m, f32),
+          MapSeq(m, PairType(f32, f32), f32, mul,
             Zip(m, f32, f32, rowA, columnB))), false))
 
     val matrixMult = DepLambda[NatKind](r)(DepLambda[NatKind](m)(DepLambda[NatKind](n)(
       Lambda[ExpType, FunType[ExpType, ExpType]](
         matrixA, Lambda[ExpType, ExpType](matrixB,
-          MapGlobal(0)(n, ArrayType(m,f32), ArrayType(r,f32),
+          MapThreads('x')(n, ArrayType(m,f32), ArrayType(r,f32),
             Lambda[ExpType, ExpType](columnB,
-              MapGlobal(0)(r, ArrayType(m,f32), f32,
+              MapThreads('y')(r, ArrayType(m,f32), f32,
                 dotproduct,
                 Transpose(m, r, f32,matrixB))),
             matrixA
           ))
       ))))
-    println(KernelGenerator.apply().makeCode(matrixMult, "matrixMult").code)
+
+    val kernel = shine.cuda.KernelGenerator.apply().makeCode(matrixMult, "matrixMult")
+    println("CODE:")
+    println(kernel.code)
+    val scalaFun = kernel.as[ScalaFunction`(`Int `,` Int `,` Int `,` scala.Array[scala.Array[Int]]`,` scala.Array[scala.Array[Int]]`)=>`scala.Array[scala.Array[Int]]].withSizes(LocalSize(1), GlobalSize(1))
+
+    val vecAArray = scala.Array(scala.Array(1,1), scala.Array(1,1))
+    val vecBArray = scala.Array(scala.Array(1,1), scala.Array(1,1))
+
+    val (result, time) = scalaFun(2 `,` 2 `,` 2 `,` vecAArray `,` vecBArray)
+    println(time)
+
+    println(result(0)(0))
   }
 }

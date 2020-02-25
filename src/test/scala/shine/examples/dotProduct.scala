@@ -4,14 +4,14 @@ import shine.C.ProgramGenerator
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA.FunctionalPrimitives._
-import shine.DPIA.Semantics.OperationalSemantics.FloatData
+import shine.DPIA.Semantics.OperationalSemantics.{IntData, FloatData}
 import shine.DPIA._
 import shine.OpenCL.FunctionalPrimitives.{OpenCLReduceSeq, To}
 import shine.OpenCL._
 import shine.test_util
-import util.SyntaxChecker
 
-class dotProduct extends test_util.TestsWithExecutor {
+//TODO refactor
+class dotProduct extends test_util.TestsWithYACX {
 
   test("dot-product") {
     /* javascript:
@@ -60,37 +60,70 @@ class dotProduct extends test_util.TestsWithExecutor {
     */
   }
 
-  test("dotproduct OpenCL") {
-    val x = Identifier(freshName("x"), ExpType(PairType(f32, f32), read))
-    val y = Identifier(freshName("y"), ExpType(f32, read))
-    val z = Identifier(freshName("z"), ExpType(f32, read))
+//  test("dotproduct OpenCL") {
+//    val x = Identifier(freshName("x"), ExpType(PairType(int, int), read))
+//    val y = Identifier(freshName("y"), ExpType(int, read))
+//    val z = Identifier(freshName("z"), ExpType(int, read))
+//
+//    val n = NatIdentifier(freshName("n"))
+//    val vecA = Identifier(freshName("vecA"), ExpType(ArrayType(n, int), read))
+//    val vecB = Identifier(freshName("vecB"), ExpType(ArrayType(n, int), read))
+//
+//    val mul = Lambda[ExpType, ExpType](x, BinOp(Operators.Binary.MUL, Fst(int, int, x), Snd(int, int, x)))
+//    val add = Lambda[ExpType, FunType[ExpType, ExpType]](y, Lambda[ExpType, ExpType](z, BinOp(Operators.Binary.ADD, y, z)))
+//
+//    val dot = DepLambda[NatKind](n)(Lambda[ExpType, FunType[ExpType, ExpType]](vecA, Lambda[ExpType, ExpType](vecB,
+//      //Wird entsprechendes OpenCL Pattern verwendet?
+//      OpenCLReduceSeq(n, shine.DPIA.Types.AddressSpace.Global, int, int, add, Literal(IntData(0)),
+//        //Falls ein new without address space fehler auftaucht: fehlt ein To um ein MapSeq (outermost häufig wichtigste)?
+//        To(shine.DPIA.Types.AddressSpace.Global, ArrayType(n, int), MapSeq(n, PairType(int, int), int, mul,
+//          Zip(n, int, int, vecA, vecB))), false))))
+//
+//    val kernel = KernelGenerator.apply().makeCode(dot, "dotProduct")
+//    println("CODE:")
+//    println(kernel.code)
+//    SyntaxChecker.checkOpenCL(kernel.code)
+//    val scalaFun = kernel.as[ScalaFunction`(`Int `,` scala.Array[Int]`,` scala.Array[Int]`)=>`scala.Array[Int]].withSizes(LocalSize(1), GlobalSize(1))
+//
+//    val vecAArray = scala.Array.fill(4)(1)
+//    val vecBArray = scala.Array.fill(4)(1)
+//
+//    val (result, time) = scalaFun(4 `,` vecAArray `,` vecBArray)
+//    println(time)
+//
+//    println(result(0))
+//  }
 
-    val n = NatIdentifier(freshName("n"))
-    val vecA = Identifier(freshName("vecA"), ExpType(ArrayType(n, f32), read))
-    val vecB = Identifier(freshName("vecB"), ExpType(ArrayType(n, f32), read))
+test("dotproduct CUDA") {
+  val x = Identifier(freshName("x"), ExpType(PairType(int, int), read))
+  val y = Identifier(freshName("y"), ExpType(int, read))
+  val z = Identifier(freshName("z"), ExpType(int, read))
 
-    val mul = Lambda[ExpType, ExpType](x, BinOp(Operators.Binary.MUL, Fst(f32, f32, x), Snd(f32, f32, x)))
-    val add = Lambda[ExpType, FunType[ExpType, ExpType]](y, Lambda[ExpType, ExpType](z, BinOp(Operators.Binary.ADD, y, z)))
+  val n = NatIdentifier(freshName("n"))
+  val vecA = Identifier(freshName("vecA"), ExpType(ArrayType(n, int), read))
+  val vecB = Identifier(freshName("vecB"), ExpType(ArrayType(n, int), read))
 
-    val dot = DepLambda[NatKind](n)(Lambda[ExpType, FunType[ExpType, ExpType]](vecA, Lambda[ExpType, ExpType](vecB,
-      //Wird entsprechendes OpenCL Pattern verwendet?
-      OpenCLReduceSeq(n, shine.DPIA.Types.AddressSpace.Global, f32, f32, add, Literal(FloatData(0.0f)),
-        //Falls ein new without address space fehler auftaucht: fehlt ein To um ein MapSeq (outermost häufig wichtigste)?
-        To(shine.DPIA.Types.AddressSpace.Global, ArrayType(n, f32), MapSeq(n, PairType(f32, f32), f32, mul,
-          Zip(n, f32, f32, vecA, vecB))), false))))
+  val mul = Lambda[ExpType, ExpType](x, BinOp(Operators.Binary.MUL, Fst(int, int, x), Snd(int, int, x)))
+  val add = Lambda[ExpType, FunType[ExpType, ExpType]](y, Lambda[ExpType, ExpType](z, BinOp(Operators.Binary.ADD, y, z)))
 
-    val kernel = KernelGenerator.apply().makeCode(dot, "dotProduct")
-    println("CODE:")
-    println(kernel.code)
-    SyntaxChecker.checkOpenCL(kernel.code)
-    val scalaFun = kernel.as[ScalaFunction`(`Int `,` scala.Array[Float]`,` scala.Array[Float]`)=>`Float].withSizes(LocalSize(1), GlobalSize(1))
+  val dot = DepLambda[NatKind](n)(Lambda[ExpType, FunType[ExpType, ExpType]](vecA, Lambda[ExpType, ExpType](vecB,
+  //Wird entsprechendes OpenCL Pattern verwendet?
+  OpenCLReduceSeq(n, shine.DPIA.Types.AddressSpace.Global, int, int, add, Literal(IntData(0)),
+  //Falls ein new without address space fehler auftaucht: fehlt ein To um ein MapSeq (outermost häufig wichtigste)?
+  To(shine.DPIA.Types.AddressSpace.Global, ArrayType(n, int), MapSeq(n, PairType(int, int), int, mul,
+  Zip(n, int, int, vecA, vecB))), false))))
 
-    val vecAArray = scala.Array(1F,2F,3F,4F)
-    val vecBArray = vecAArray.reverse
+  val kernel = shine.cuda.KernelGenerator.apply().makeCode(dot, "dotProduct")
+  println("CODE:")
+  println(kernel.code)
+  val scalaFun = kernel.as[ScalaFunction`(`Int `,` scala.Array[Int]`,` scala.Array[Int]`)=>`scala.Array[Int]].withSizes(LocalSize(1), GlobalSize(1))
 
-    val (result, time) = scalaFun(4 `,` vecAArray `,` vecBArray)
-    println(time)
+  val vecAArray = scala.Array.fill(4)(1)
+  val vecBArray = scala.Array.fill(4)(1)
 
-    println(result)
-  }
+  val (result, time) = scalaFun(4 `,` vecAArray `,` vecBArray)
+  println(time)
+
+  println(result(0))
+}
 }
