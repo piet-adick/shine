@@ -7,24 +7,21 @@ import shine.DPIA.Types._
 import shine.DPIA.{Nat, VarType}
 import shine.{C, OpenCL}
 import shine.OpenCL.{GlobalSize, LocalSize, NDRange, get_global_size, get_local_size, get_num_groups}
-import yacx.{ByteArg, DoubleArg, FloatArg, HalfArg, IntArg, KernelArg, LongArg, Program, ShortArg}
+import yacx.{ByteArg, DoubleArg, FloatArg, HalfArg, IntArg, LongArg, Program, ShortArg}
 
 import scala.collection.Seq
-import scala.language.implicitConversions
 import scala.collection.immutable.List
 
 //noinspection ScalaDocParserErrorInspection
-//TODO Vererbung in scala with case classes
 case class Kernel(decls: Seq[C.AST.Decl],
                   kernel: OpenCL.AST.KernelDecl,
                   outputParam: Identifier[AccType],
                   inputParams: Seq[Identifier[ExpType]],
                   intermediateParams: Seq[Identifier[VarType]],
                   printer: Node => String
-                 ) extends util.Kernel {
-  //TODO load Cuda-Libary
+                 ) extends util.Kernel(decls, kernel, outputParam, inputParams, intermediateParams, printer) {
 
-  //TODO: how does it works for CUDA?
+  //TODO: how does this works for CUDA?
   override protected def findParameterMappings(arguments: List[Argument], localSize: LocalSize, globalSize: GlobalSize): Map[Nat, Nat] = {
     val numGroups: NDRange = (
       globalSize.size.x /^ localSize.size.x,
@@ -46,18 +43,21 @@ case class Kernel(decls: Seq[C.AST.Decl],
   }
 
   override protected def execute(localSize: LocalSize, globalSize: GlobalSize, sizeVarMapping: Map[Nat, Nat], kernelArgs: List[KernelArg]): Double = {
-    val kernelJNI = Program.create(code, "foo").compile()
-    val runtime = kernelJNI.launch(
+    val kernel = Program.create(code, "foo").compile()
+
+    val kernelArgsCUDA = kernelArgs.map(_.asInstanceOf[KernelArgCUDA].kernelArg)
+
+    val runtime = kernel.launch(
               ArithExpr.substitute(localSize.size.x, sizeVarMapping).eval,
               ArithExpr.substitute(localSize.size.y, sizeVarMapping).eval,
               ArithExpr.substitute(localSize.size.z, sizeVarMapping).eval,
               ArithExpr.substitute(globalSize.size.x, sizeVarMapping).eval,
               ArithExpr.substitute(globalSize.size.y, sizeVarMapping).eval,
               ArithExpr.substitute(globalSize.size.z, sizeVarMapping).eval,
-              kernelArgs.toArray: _*
+              kernelArgsCUDA.toArray: _*
     )
 
-    runtime.getLaunch.asInstanceOf[Double]
+    runtime.getLaunch().asInstanceOf[Double]
   }
 
   //TODO
@@ -65,10 +65,10 @@ case class Kernel(decls: Seq[C.AST.Decl],
   //not sure what a localArg is
   //in OpenCl-LocalArg there will be nothing up- or downloaded only the ith KernelArg
   //of the Kernel will be set as "cl::__local(sizeInByte)"
-  override protected def createLocalArg(sizeInBytes: Long): KernelArg = ???
+  override protected def createLocalArg(sizeInBytes: Long): KernelArgCUDA = ???
 
-  override protected def createOutputArg(numberOfElements: Int, dataType: DataType): KernelArg = {
-    (getOutputType(dataType) match {
+  override protected def createOutputArg(numberOfElements: Int, dataType: DataType): KernelArgCUDA = {
+    KernelArgCUDA(dataType match {
       case shine.DPIA.Types.i8 =>
         println(s"Allocated global byte-argument with $numberOfElements bytes")
         ByteArg.createOutput(numberOfElements);
@@ -97,21 +97,23 @@ case class Kernel(decls: Seq[C.AST.Decl],
 
   override protected def asArray[R](dt: DataType, output: KernelArg): R = {
     assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])
-    (getOutputType(dt) match {
-      case shine.DPIA.Types.i8 => output.asInstanceOf[ByteArg].asByteArray()
-      case shine.DPIA.Types.i16 => output.asInstanceOf[ShortArg].asShortArray()
-      case shine.DPIA.Types.i32 | shine.DPIA.Types.int => output.asInstanceOf[IntArg].asIntArray()
-      case shine.DPIA.Types.i64 => output.asInstanceOf[LongArg].asLongArray()
-      case shine.DPIA.Types.f16 => output.asInstanceOf[HalfArg].asFloatArray()
-      case shine.DPIA.Types.f32 => output.asInstanceOf[FloatArg].asFloatArray()
-      case shine.DPIA.Types.f64 => output.asInstanceOf[DoubleArg].asDoubleArray()
+    val outputCUDA = output.asInstanceOf[KernelArgCUDA].kernelArg
+
+    (dt match {
+      case shine.DPIA.Types.i8 => outputCUDA.asInstanceOf[ByteArg].asByteArray()
+      case shine.DPIA.Types.i16 => outputCUDA.asInstanceOf[ShortArg].asShortArray()
+      case shine.DPIA.Types.i32 | shine.DPIA.Types.int => outputCUDA.asInstanceOf[IntArg].asIntArray()
+      case shine.DPIA.Types.i64 => outputCUDA.asInstanceOf[LongArg].asLongArray()
+      case shine.DPIA.Types.f16 => outputCUDA.asInstanceOf[HalfArg].asFloatArray()
+      case shine.DPIA.Types.f32 => outputCUDA.asInstanceOf[FloatArg].asFloatArray()
+      case shine.DPIA.Types.f64 => outputCUDA.asInstanceOf[DoubleArg].asDoubleArray()
       case _ => throw new IllegalArgumentException("Return type of the given lambda expression " +
         "not supported: " + dt.toString)
     }).asInstanceOf[R]
   }
 
-  override protected def createInputArg(arg: Any): KernelArg = {
-    arg match {
+  override protected def createInputArg(arg: Any): KernelArgCUDA = {
+    KernelArgCUDA(arg match {
       case  b: Byte => createValueArg(b)
       case ab: Array[Byte] => createArrayArg(ab)
       case ab: Array[Array[Byte]] => createArrayArg(ab.flatten)
@@ -135,6 +137,8 @@ case class Kernel(decls: Seq[C.AST.Decl],
       case al: Array[Array[Long]] => createArrayArg(al.flatten)
       case al: Array[Array[Array[Long]]] => createArrayArg(al.flatten.flatten)
       case al: Array[Array[Array[Array[Long]]]] => createArrayArg(al.flatten.flatten.flatten)
+
+      //TODO use halfValues
 
       case  f: Float => createValueArg(f)
       case af: Array[Float] => createArrayArg(af)
@@ -161,7 +165,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
 
       case _ => throw new IllegalArgumentException("Kernel argument is of unsupported type: " +
         arg.getClass.getName)
-    }
+    })
   }
 
   private def createArrayArg(array: Array[Byte]): ByteArg = {
@@ -200,38 +204,38 @@ case class Kernel(decls: Seq[C.AST.Decl],
     DoubleArg.create(array:_*)
   }
 
-  private def createValueArg(value: Byte): KernelArg = {
+  private def createValueArg(value: Byte): yacx.KernelArg = {
     println(s"Allocated value byte-argument with 1 bytes")
     ByteArg.createValue(value)
   }
 
-  private def createValueArg(value: Short): KernelArg = {
+  private def createValueArg(value: Short): yacx.KernelArg = {
     println(s"Allocated value short-argument with 2 bytes")
     ShortArg.createValue(value)
   }
 
-  private def createValueArg(value: Int): KernelArg = {
+  private def createValueArg(value: Int): yacx.KernelArg = {
     println(s"Allocated value int-argument with 4 bytes")
     IntArg.createValue(value)
   }
 
-  private def createValueArg(value: Long): KernelArg = {
+  private def createValueArg(value: Long): yacx.KernelArg = {
     println(s"Allocated value long-argument with 8 bytes")
     LongArg.createValue(value)
   }
 
   // TODO
-  //  private def createValueArgHalf(value: Float): KernelArg = {
+  //  private def createValueArgHalf(value: Float): yacx.KernelArg = {
   //    println(s"Allocated value half-argument with 2 bytes")
   //    HalfArg.createValue(value)
   //  }
 
-  private def createValueArg(value: Float): KernelArg = {
+  private def createValueArg(value: Float): yacx.KernelArg = {
     println(s"Allocated value float-argument with 4 bytes")
     FloatArg.createValue(value)
   }
 
-  private def createValueArg(value: Double): KernelArg = {
+  private def createValueArg(value: Double): yacx.KernelArg = {
     println(s"Allocated value double-argument with 8 bytes")
     DoubleArg.createValue(value)
   }

@@ -32,7 +32,7 @@ class KernelGenerator(
                                  globalSize: GlobalSize)(
                                  originalPhrase: Phrase[T],
                                  name: String
-                               ): cuda.KernelWithSizes = {
+                               ): util.KernelWithSizes = {
     val (phrase, params, defs) =
       getPhraseAndParams(originalPhrase, Seq(), Seq())
     makeKernel(name, phrase, params.reverse, defs.reverse,
@@ -42,7 +42,7 @@ class KernelGenerator(
   def makeCode[T <: PhraseType](
                                  originalPhrase: Phrase[T],
                                  name: String = "KERNEL"
-                               ): cuda.KernelNoSizes = {
+                               ): util.KernelNoSizes = {
     val (phrase, params, defs) =
       getPhraseAndParams(originalPhrase, Seq(), Seq())
     makeKernel(name, phrase, params.reverse, defs.reverse, None, None).left.get
@@ -79,7 +79,7 @@ class KernelGenerator(
                           letNatDefs:Seq[(LetNatIdentifier, Phrase[ExpType])],
                           localSize: Option[LocalSize],
                           globalSize: Option[GlobalSize],
-                        ): Either[cuda.KernelNoSizes, cuda.KernelWithSizes] = {
+                        ): Either[util.KernelNoSizes, util.KernelWithSizes] = {
 
     val outParam = createOutputParam(outT = p.t)
 
@@ -127,9 +127,9 @@ class KernelGenerator(
                 printer)
 
               (localSize, globalSize) match {
-                case (None, None) => Left(KernelNoSizes(cuKernel))
+                case (None, None) => Left(util.KernelNoSizes(cuKernel))
                 case (Some(localSize_), Some(globalSize_)) =>
-                  Right(KernelWithSizes(cuKernel,localSize_, globalSize_))
+                  Right(util.KernelWithSizes(cuKernel,localSize_, globalSize_))
                 case _ =>
                   throw new Exception(
                     "At the moment, we assume that local and global size" +

@@ -1,8 +1,8 @@
 package benchmarks.core
 
-import shine.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
+import shine.OpenCL.{GlobalSize, LocalSize}
 import rise.core.Expr
-import util.{Display, Time, TimeSpan, gen}
+import util.{Display, KernelWithSizes, Time, TimeSpan, gen}
 
 import scala.util.Random
 

@@ -85,7 +85,7 @@ object nbody {
   ))
 
   import shine.OpenCL._
-  import util.{Time, TimeSpan}
+  import util.{KernelNoSizes, Time, TimeSpan}
 
   private val deltaT = 0.005f
   private val espSqr = 500.0f

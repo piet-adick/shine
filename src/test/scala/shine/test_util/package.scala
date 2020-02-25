@@ -23,6 +23,13 @@ package object test_util {
     }
   }
 
+  @silent("define classes/objects inside of package objects")
+  abstract class TestsWithYACX extends Tests with BeforeAndAfter {
+    before {
+      yacx.Executor.loadLibary()
+    }
+  }
+
   def runsWithSameResult[R, U <: Time.Unit](runs: Seq[(String, (R, TimeSpan[U]))])
                                            (implicit assertSame: AssertSame[R]): Unit = {
     runs.tail.foreach(r => assertSame(r._2._1, runs.head._2._1, s"${r._1} had a different result"))

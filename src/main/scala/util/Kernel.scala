@@ -7,17 +7,14 @@ import shine.DPIA.Types._
 import shine.DPIA.{Nat, NatIdentifier, VarType}
 import shine.{C, OpenCL}
 import shine.OpenCL.{FunctionHelper, GlobalSize, HList, LocalSize}
-import yacx.KernelArg
 
 import scala.language.implicitConversions
 import scala.collection.Seq
 import scala.collection.immutable.List
 import scala.util.{Failure, Success, Try}
 
-//TODO: extends OpenCL-Kernel-class with this class
-//TODO: Use same KernelArg in OpenCL/CUDA
 //noinspection ScalaDocParserErrorInspection
-abstract case class Kernel(decls: Seq[C.AST.Decl],
+abstract class Kernel(decls: Seq[C.AST.Decl],
                   kernel: OpenCL.AST.KernelDecl,
                   outputParam: Identifier[AccType],
                   inputParams: Seq[Identifier[ExpType]],
@@ -50,7 +47,7 @@ abstract case class Kernel(decls: Seq[C.AST.Decl],
     * val kernelF = kernel.as[ScalaFunction`(`Array[Float]`)=>`Array[Float]]
     * val (result, time) = kernelF(xs `;`)
     */
-  def as[F <: FunctionHelper](localSize: LocalSize, globalSize: GlobalSize)
+   def as[F <: FunctionHelper](localSize: LocalSize, globalSize: GlobalSize)
                              (implicit ev: F#T <:< HList): F#T => (F#R, TimeSpan[Time.ms]) = {
     hArgs: F#T => {
       val args: List[Any] = hArgs.toList
@@ -81,19 +78,22 @@ abstract case class Kernel(decls: Seq[C.AST.Decl],
 
       val runtime = execute(localSize, globalSize, sizeVarMapping, kernelArgs)
 
-      val output = asArray[F#R](outputParam.`type`.dataType, outputArg)
+      val output = asArray[F#R](getOutputType(outputParam.`type`.dataType), outputArg)
+
+      //TODO dispose arguments, Kernel
 
       (output, TimeSpan.inMilliseconds(runtime))
     }
   }
 
   // TODO: Comments for the methods would be useful
-  protected abstract def findParameterMappings(arguments: List[Argument], localSize: LocalSize, globalSize: GlobalSize) : Map[Nat, Nat]
-  protected abstract def execute(localSize: LocalSize, globalSize: GlobalSize, sizeVarMapping: Map[Nat, Nat], kernelArgs: List[KernelArg]) : Double
-  protected abstract def createLocalArg(sizeInBytes: Long) : KernelArg
-  protected abstract def createOutputArg(numberOfElements: Int, dataType: DataType) : KernelArg
-  protected abstract def asArray[R](dt: DataType, output: KernelArg): R
-  protected abstract def createInputArg(arg: Any): KernelArg
+  // make this methods abstract
+  protected def findParameterMappings(arguments: List[Argument], localSize: LocalSize, globalSize: GlobalSize) : Map[Nat, Nat]
+  protected def execute(localSize: LocalSize, globalSize: GlobalSize, sizeVarMapping: Map[Nat, Nat], kernelArgs: List[KernelArg]) : Double
+  protected def createLocalArg(sizeInBytes: Long) : KernelArg
+  protected def createOutputArg(numberOfElements: Int, dataType: DataType) : KernelArg
+  protected def asArray[R](dt: DataType, output: KernelArg): R
+  protected def createInputArg(arg: Any): KernelArg
 
   /**
     * A helper class to group together the various bits of related information that make up a parameter
@@ -180,7 +180,7 @@ abstract case class Kernel(decls: Seq[C.AST.Decl],
   private def createInputKernelArgs(arguments: Seq[Argument], sizeVariables: Map[Nat, Nat]): List[KernelArg] = {
 
     //Helper for the creation of intermdiate arguments
-    def createIntermediateArg(arg: Argument, sizeVariables: Map[Nat, Nat]): yacx.KernelArg = {
+    def createIntermediateArg(arg: Argument, sizeVariables: Map[Nat, Nat]): KernelArg = {
       //Try to substitue away all the free variables
       val rawSize = sizeInElements(arg.identifier.t.dataType).value
       val cleanSize = ArithExpr.substitute(rawSize, sizeVariables)
@@ -190,7 +190,7 @@ abstract case class Kernel(decls: Seq[C.AST.Decl],
             case OpenCL.AST.PointerType(a, _, _) => a match {
               case AddressSpace.Private => throw new Exception("'Private memory' is an invalid memory for parameter")
               case AddressSpace.Local => createLocalArg(actualSize)
-              case AddressSpace.Global => createOutputArg(actualSize, arg.identifier.t.dataType)
+              case AddressSpace.Global => createOutputArg(actualSize, getOutputType(arg.identifier.t.dataType))
               case AddressSpace.Constant => ???
               case AddressSpaceIdentifier(_) => throw new Exception("This shouldn't happen")
             }
@@ -213,7 +213,7 @@ abstract case class Kernel(decls: Seq[C.AST.Decl],
     }
   }
 
-  private def createOutputKernelArg(sizeVariables: Map[Nat, Nat]): yacx.KernelArg = {
+  private def createOutputKernelArg(sizeVariables: Map[Nat, Nat]): KernelArg = {
     val rawSize = sizeInElements(this.outputParam.t.dataType).value
     val cleanSize = ArithExpr.substitute(rawSize, sizeVariables)
     Try(cleanSize.evalInt) match {
@@ -226,7 +226,7 @@ abstract case class Kernel(decls: Seq[C.AST.Decl],
     a.flatMap{ case (x,y) => Iterable(x, java.lang.Float.floatToIntBits(y)) }
   }
 
-  protected def getOutputType(dt: DataType): DataType = dt match {
+  private def getOutputType(dt: DataType): DataType = dt match {
     case _: ScalarType => dt
     case _: IndexType => int
     case _: DataTypeIdentifier => dt
@@ -260,6 +260,10 @@ abstract case class Kernel(decls: Seq[C.AST.Decl],
 
     override def toString = s"$value elements"
   }
+
+  sealed trait KernelArg
+  case class KernelArgCUDA(kernelArg: yacx.KernelArg) extends KernelArg
+  case class KernelArgOpenCL(kernelArg: opencl.executor.KernelArg) extends KernelArg
 }
 
 sealed case class KernelWithSizes(kernel: Kernel,

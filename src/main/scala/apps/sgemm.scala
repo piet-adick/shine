@@ -8,7 +8,7 @@ import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.OpenCL.DSL._
 import rise.core.types._
-import util.{Time, TimeSpan}
+import util.{KernelWithSizes, Time, TimeSpan}
 
 object sgemm {
   // we can use implicit type parameters and type annotations to specify the function type of mult

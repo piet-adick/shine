@@ -30,7 +30,7 @@ class KernelGenerator(
     globalSize: GlobalSize)(
     originalPhrase: Phrase[T],
     name: String
-  ): OpenCL.KernelWithSizes = {
+  ): util.KernelWithSizes = {
     val (phrase, params, defs) =
       getPhraseAndParams(originalPhrase, Seq(), Seq())
     makeKernel(name, phrase, params.reverse, defs.reverse,
@@ -40,7 +40,7 @@ class KernelGenerator(
   def makeCode[T <: PhraseType](
     originalPhrase: Phrase[T],
     name: String = "KERNEL"
-  ): OpenCL.KernelNoSizes = {
+  ): util.KernelNoSizes = {
     val (phrase, params, defs) =
       getPhraseAndParams(originalPhrase, Seq(), Seq())
     makeKernel(name, phrase, params.reverse, defs.reverse, None, None).left.get
@@ -77,7 +77,7 @@ class KernelGenerator(
     letNatDefs:Seq[(LetNatIdentifier, Phrase[ExpType])],
     localSize: Option[LocalSize],
     globalSize: Option[GlobalSize],
-  ): Either[OpenCL.KernelNoSizes, OpenCL.KernelWithSizes] = {
+  ): Either[util.KernelNoSizes, util.KernelWithSizes] = {
 
     val outParam = createOutputParam(outT = p.t)
 
@@ -125,9 +125,9 @@ class KernelGenerator(
             printer)
 
       (localSize, globalSize) match {
-        case (None, None) => Left(KernelNoSizes(oclKernel))
+        case (None, None) => Left(util.KernelNoSizes(oclKernel))
         case (Some(localSize_), Some(globalSize_)) =>
-          Right(KernelWithSizes(oclKernel,localSize_, globalSize_))
+          Right(util.KernelWithSizes(oclKernel,localSize_, globalSize_))
         case _ =>
           throw new Exception(
             "At the moment, we assume that local and global size" +

@@ -20,7 +20,7 @@ object nearestNeighbour {
   ))
 
   import shine.OpenCL._
-  import util.{Time, TimeSpan}
+  import util.{KernelNoSizes, Time, TimeSpan}
 
   def runOriginalKernel(
     name: String,

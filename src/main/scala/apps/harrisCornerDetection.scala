@@ -218,7 +218,7 @@ object harrisCornerDetection {
   */
 
   import shine.OpenCL._
-  import util.{Time, TimeSpan}
+  import util.{KernelNoSizes, Time, TimeSpan}
 
   // n x m . t => n.m.t
   def as2D[A: ClassTag, B](m: Int): ((Array[A], B)) => (Array[Array[A]], B) = {

@@ -83,7 +83,7 @@ object molecularDynamics {
   }
 
   import shine.OpenCL._
-  import util.{Time, TimeSpan}
+  import util.{KernelNoSizes, Time, TimeSpan}
 
   private val cutsq = 16.0f
   private val lj1 = 1.5f
