@@ -43,7 +43,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
   }
 
   override protected def execute(localSize: LocalSize, globalSize: GlobalSize, sizeVarMapping: Map[Nat, Nat], kernelArgs: List[KernelArg]): Double = {
-    val kernel = Program.create(code, "foo").compile()
+    val kernel = Program.create(code, this.kernel.name).compile()
 
     val kernelArgsCUDA = kernelArgs.map(_.asInstanceOf[KernelArgCUDA].kernelArg)
 

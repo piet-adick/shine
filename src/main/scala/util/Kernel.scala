@@ -217,7 +217,7 @@ abstract class Kernel(decls: Seq[C.AST.Decl],
     val rawSize = sizeInElements(this.outputParam.t.dataType).value
     val cleanSize = ArithExpr.substitute(rawSize, sizeVariables)
     Try(cleanSize.evalInt) match {
-      case Success(actualSize) => createOutputArg(actualSize, this.outputParam.t.dataType)
+      case Success(actualSize) => createOutputArg(actualSize, getOutputType(this.outputParam.t.dataType))
       case Failure(_) => throw new Exception(s"Could not evaluate $cleanSize")
     }
   }
