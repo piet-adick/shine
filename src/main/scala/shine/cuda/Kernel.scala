@@ -96,10 +96,9 @@ case class Kernel(decls: Seq[C.AST.Decl],
   }
 
   override protected def asArray[R](dt: DataType, output: KernelArg): R = {
-    assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])
     val outputCUDA = output.asInstanceOf[KernelArgCUDA].kernelArg
 
-    (getOutputType(dt) match {
+    (dt match {
       case shine.DPIA.Types.i8 => outputCUDA.asInstanceOf[ByteArg].asByteArray()
       case shine.DPIA.Types.i16 => outputCUDA.asInstanceOf[ShortArg].asShortArray()
       case shine.DPIA.Types.i32 | shine.DPIA.Types.int => outputCUDA.asInstanceOf[IntArg].asIntArray()

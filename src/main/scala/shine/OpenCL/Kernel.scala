@@ -135,10 +135,9 @@ case class Kernel(decls: Seq[C.AST.Decl],
   }
 
   override protected def asArray[R](dt: DataType, output: KernelArg): R = {
-    assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])
     val outputOpenCL = output.asInstanceOf[KernelArgOpenCL].kernelArg.asInstanceOf[GlobalArg]
 
-    (getOutputType(dt) match {
+    (dt match {
       case shine.DPIA.Types.int => outputOpenCL.asIntArray()
       case shine.DPIA.Types.f32 => outputOpenCL.asFloatArray()
       case shine.DPIA.Types.f64 => outputOpenCL.asDoubleArray()

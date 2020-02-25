@@ -78,7 +78,9 @@ abstract class Kernel(decls: Seq[C.AST.Decl],
 
       val runtime = execute(localSize, globalSize, sizeVarMapping, kernelArgs)
 
-      val output = asArray[F#R](outputParam.`type`.dataType, outputArg)
+      val dt = outputParam.`type`.dataType
+      assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])
+      val output = asArray[F#R](getOutputType(dt), outputArg)
 
       //TODO dispose arguments, Kernel
 
@@ -226,7 +228,7 @@ abstract class Kernel(decls: Seq[C.AST.Decl],
     a.flatMap{ case (x,y) => Iterable(x, java.lang.Float.floatToIntBits(y)) }
   }
 
-  protected def getOutputType(dt: DataType): DataType = dt match {
+  private def getOutputType(dt: DataType): DataType = dt match {
     case _: ScalarType => dt
     case _: IndexType => int
     case _: DataTypeIdentifier => dt
