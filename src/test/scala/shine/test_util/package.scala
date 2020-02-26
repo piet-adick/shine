@@ -11,9 +11,13 @@ package object test_util {
   @silent("define classes/objects inside of package objects")
   abstract class Tests extends AnyFunSuite with Matchers {
     protected def testCL(testName: String, testTags: Tag*)(testFun: => Any /* Assertion */)(implicit pos: source.Position): Unit = {
+      test(testName, testTags:_*)(openCLFun(testFun))(pos)
+    }
+
+    private def openCLFun(testFun: => Any /* Assertion */): Unit ={
       opencl.executor.Executor.loadAndInit()
 
-      test(testName, testTags:_*)(testFun)(pos)
+      testFun
 
       opencl.executor.Executor.shutdown()
     }

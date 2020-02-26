@@ -86,8 +86,7 @@ class matrixmultiplication extends test_util.Tests {
         Lambda[ExpType, ExpType](matrixB,
           MapThreads('x')(n, ArrayType(m, f32), ArrayType(r, f32),
             Lambda[ExpType, ExpType](rowA,
-              //TODO: use MapThread here
-              MapSeq(r, ArrayType(m, f32), f32,
+              MapThreads('y')(r, ArrayType(m, f32), f32,
                 dotproductCL,
                 Transpose(m, r, f32, matrixB))),
             matrixA))))))
@@ -98,7 +97,7 @@ class matrixmultiplication extends test_util.Tests {
   }
 
   private def checkMatrixMultKernel(kernel: util.KernelNoSizes): Unit ={
-    val scalaFun = kernel.as[ScalaFunction`(`Int `,` Int `,` Int `,` scala.Array[scala.Array[Float]]`,` scala.Array[scala.Array[Float]]`)=>`scala.Array[Float]].withSizes(LocalSize(1), GlobalSize(1))
+    val scalaFun = kernel.as[ScalaFunction`(`Int `,` Int `,` Int `,` scala.Array[scala.Array[Float]] `,` scala.Array[scala.Array[Float]] `)=>` scala.Array[Float]].withSizes(LocalSize(1), GlobalSize(1))
 
     val (result, _) = scalaFun(matrixATest.length `,` matrixBTest.length `,` matrixBTest.transpose.length `,` matrixATest `,` matrixBTest)
 
@@ -109,9 +108,12 @@ class matrixmultiplication extends test_util.Tests {
       println(resultTest.deep.mkString("\n"))
       println("Result: ")
       println(resultMatrix.deep.mkString("\n"))
-    }
 
-    assert(similar(resultMatrix, resultTest))
+      println("KernelCode:")
+      println(kernel.code)
+
+      throw new RuntimeException("false result")
+    }
   }
 
   /**

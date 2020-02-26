@@ -54,6 +54,9 @@ class dotProduct extends test_util.Tests {
     val kernel = shine.OpenCL.KernelGenerator.apply().makeCode(dot, "dotProduct")
     SyntaxChecker.checkOpenCL(kernel.code)
 
+    println("KernelCode:")
+    println(kernel.code)
+
     checkDotKernel(kernel)
   }
 
@@ -82,9 +85,12 @@ class dotProduct extends test_util.Tests {
       println(resultTest)
       print("Result: ")
       println(result(0))
-    }
 
-    assert(similar(result(0), resultTest))
+      println("KernelCode:")
+      println(kernel.code)
+
+      throw new RuntimeException("false result")
+    }
   }
 
   /**
