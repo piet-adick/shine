@@ -13,7 +13,7 @@ object Printer {
 
 class Printer extends shine.OpenCL.AST.Printer {
   override def printStmt(s: Stmt): Unit = s match {
-    case _: Synchronize => print("__synchronize()")
+    case _: Synchronize => print("__syncthreads();")
     case _ => super.printStmt(s)
   }
 

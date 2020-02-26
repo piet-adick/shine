@@ -6,11 +6,11 @@ import shine.DPIA.Types.{CommType, comm}
 
 import scala.xml.Elem
 
-final case class Synchronize() extends CommandPrimitive {
+final case class SyncThreads() extends CommandPrimitive {
 
   override val t: CommType = comm
 
-  override def prettyPrint: String = "__synchronize()"
+  override def prettyPrint: String = "__syncthreads()"
 
   override def xmlPrinter: Elem = <synchronize/>
 

@@ -5,7 +5,7 @@ import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types.DataType._
 import shine.DPIA.Types.{AccType, CommType, DataType, ExpType, read}
 import shine.DPIA._
-import shine.cuda.primitives.imperative.Synchronize
+import shine.cuda.primitives.imperative.SyncThreads
 import shine.cuda.primitives.imperative.ParForBlock
 
 final case class MapBlockI(dim: Char = 'x') {
@@ -17,6 +17,6 @@ final case class MapBlockI(dim: Char = 'x') {
     comment("mapBlock")`;`
     ParForBlock(dim)(n, dt2, out,
       λ(expT(idx(n), read))(i => λ(accT(dt2))(a => f(in `@` i)(a)))) `;`
-    Synchronize()
+    SyncThreads()
   }
 }

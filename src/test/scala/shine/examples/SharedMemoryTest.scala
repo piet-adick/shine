@@ -1,12 +1,14 @@
 package shine.examples
 
+import rise.core.types.NatToNatIdentifier
 import shine.DPIA.FunctionalPrimitives.{Join, Split}
-import shine.DPIA.Phrases.{DepLambda, Identifier, Lambda}
+import shine.DPIA.Phrases.Phrase.Internal
+import shine.DPIA.Phrases.{DepLambda, Identifier, Lambda, Operators}
 import shine.DPIA.Types.{AddressSpace, ArrayType, ExpType, NatKind, int, read}
-import shine.DPIA.{NatIdentifier, freshName}
+import shine.DPIA.{NatIdentifier, Types, freshName}
 import shine.OpenCL.FunctionalPrimitives.To
 import shine.OpenCL._
-import shine.cuda.primitives.functional.MapGrid
+import shine.cuda.primitives.functional.{MapBlock, MapGrid}
 import shine.test_util
 
 class SharedMemoryTest extends test_util.Tests {
@@ -14,24 +16,31 @@ class SharedMemoryTest extends test_util.Tests {
   val n = NatIdentifier(freshName("n"))
   val array = Identifier(freshName("array"), ExpType(ArrayType(n, int), read))
   val chunk = Identifier(freshName("chunk"), ExpType(ArrayType(chunkSize, int), read))
+  val x = Identifier(freshName("x"), ExpType(int, read))
 
   val chunkSizeTest = 2
   val arrayTest = Array(1, 2, 3, 4, 5, 6, 7, 8)
   val resultArray = Array(1, 2, 3, 4, 5, 6, 7, 8)
 
+
+
+
   testCU("SharedMemory-test CUDA"){
     val copy = Lambda[ExpType, ExpType](chunk,
-      To(AddressSpace.Global, ArrayType(chunkSize, int), //copy From
-        //Fkt F
-        To(AddressSpace.Global, ArrayType(chunkSize, int), chunk) //copy To
-      )
-    )
+      MapBlock('x')(chunkSize, int, int,
+        Lambda[ExpType, ExpType](x, x),
+        To(AddressSpace.Global, ArrayType(chunkSize, int),
+          MapBlock('x')(chunkSize, int, int,
+            Lambda[ExpType, ExpType](x, x), chunk))
+    ))
+    //n/chunksize
+    //val divid = Types.NatT(Internal.binOpToNat(Operators.Binary.DIV, n,chunkSize))
 
     val test = DepLambda[NatKind](chunkSize)(DepLambda[NatKind](n)(
       Lambda[ExpType, ExpType](array,
-        Join(chunkSize, n/chunkSize, read, int,
-          MapGrid(0)(n/chunkSize, ArrayType(chunkSize, int), ArrayType(chunkSize, int), copy,
-            Split(chunkSize, n/chunkSize, read, int, array))
+        Join(n /^ chunkSize, chunkSize, read, int,
+          MapGrid('x')(n /^ chunkSize, ArrayType(chunkSize, int), ArrayType(chunkSize, int), copy,
+            Split(chunkSize, n /^ chunkSize, read, int, array))
     ))))
 
     val kernel = shine.cuda.KernelGenerator.apply().makeCode(test, "test")
