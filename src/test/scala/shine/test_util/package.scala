@@ -1,25 +1,53 @@
 package shine
 
 import com.github.ghik.silencer.silent
-import opencl.executor.Executor
-import org.scalatest.BeforeAndAfter
+import org.scalactic.source
+import org.scalatest.{BeforeAndAfter, Tag}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.funsuite.AnyFunSuite
 import util.{AssertSame, Time, TimeSpan}
 
 package object test_util {
   @silent("define classes/objects inside of package objects")
-  abstract class Tests extends AnyFunSuite with Matchers
+  abstract class Tests extends AnyFunSuite with Matchers {
+    protected def testCL(testName: String, testTags: Tag*)(testFun: => Any /* Assertion */)(implicit pos: source.Position): Unit = {
+      opencl.executor.Executor.loadAndInit()
+
+      test(testName, testTags:_*)(testFun)(pos)
+
+      opencl.executor.Executor.shutdown()
+    }
+
+    protected def testCU(testName: String, testTags: Tag*)(testFun: => Any /* Assertion */)(implicit pos: source.Position): Unit = {
+      yacx.Executor.loadLibary()
+
+      test(testName, testTags:_*)(testFun)(pos)
+    }
+
+    private final def maxDifference = 0.0001f;
+
+    protected def similar(f1: Float, f2: Float): Boolean = {
+      Math.abs(f1-f2) < maxDifference
+    }
+
+    protected def similar(af1: Array[Float], af2: Array[Float]): Boolean = {
+      af1 zip af2 map{pair => similar(pair._1, pair._2)} reduce(_&&_)
+    }
+
+    protected def similar(af1: Array[Array[Float]], af2: Array[Array[Float]]): Boolean = {
+      af1 zip af2 map{pair => similar(pair._1, pair._2)} reduce(_&&_)
+    }
+  }
 
   @silent("define classes/objects inside of package objects")
   abstract class TestsWithExecutor extends Tests with BeforeAndAfter {
     before {
-      Executor.loadLibrary()
-      Executor.init()
+      opencl.executor.Executor.loadLibrary()
+      opencl.executor.Executor.init()
     }
 
     after {
-      Executor.shutdown()
+      opencl.executor.Executor.shutdown()
     }
   }
 

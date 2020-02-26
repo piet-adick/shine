@@ -148,7 +148,6 @@ case class Kernel(decls: Seq[C.AST.Decl],
 
   override protected def createOutputArg(numberOfElements: Int, dataType: DataType): KernelArg = {
     val sizeInByte = sizeInBytes(dataType)*numberOfElements
-    println(s"Allocated global argument with $sizeInByte bytes")
     KernelArgOpenCL(createGlobalArg(sizeInByte))
   }
 
