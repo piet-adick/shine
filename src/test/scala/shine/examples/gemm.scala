@@ -54,7 +54,7 @@ class gemm extends test_util.Tests {
 
   val matrixATest = scala.Array(scala.Array(1f, 2f), scala.Array(3f, 4f))
   val matrixBTest = scala.Array(scala.Array(1f, 2f), scala.Array(3f, 4f))
-  val matrixCTest = scala.Array(scala.Array(0f, 0f), scala.Array(0f, 0f))
+  val matrixCTest = scala.Array(scala.Array(39f, 40f), scala.Array(41f, 42f))
   val resultTest = gemm(matrixATest, matrixBTest, matrixCTest)
 
   test("GEMM C") {
@@ -165,9 +165,9 @@ class gemm extends test_util.Tests {
         (rowA zip columnB
           map Function.tupled(_ * _)).sum))
 
-//    for (y <- 0 until nDim; x <- 0 until kDim) {
-//      matrixProduct(y)(x) += matrixC(y)(x)
-//    }
+    for (y <- 0 until nDim; x <- 0 until kDim) {
+      matrixProduct(y)(x) += matrixC(y)(x)
+    }
 
     matrixProduct
   }
