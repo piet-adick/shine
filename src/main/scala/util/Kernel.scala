@@ -13,9 +13,10 @@ import scala.collection.Seq
 import scala.collection.immutable.List
 import scala.util.{Failure, Success, Try}
 
+//TODO: this class needs to be refatored
 //noinspection ScalaDocParserErrorInspection
 abstract class Kernel(decls: Seq[C.AST.Decl],
-                  kernel: OpenCL.AST.KernelDecl,
+                  kernel: C.AST.FunDecl, //TODO
                   outputParam: Identifier[AccType],
                   inputParams: Seq[Identifier[ExpType]],
                   intermediateParams: Seq[Identifier[VarType]],
@@ -89,7 +90,6 @@ abstract class Kernel(decls: Seq[C.AST.Decl],
   }
 
   // TODO: Comments for the methods would be useful
-  // make this methods abstract
   protected def findParameterMappings(arguments: List[Argument], localSize: LocalSize, globalSize: GlobalSize) : Map[Nat, Nat]
   protected def execute(localSize: LocalSize, globalSize: GlobalSize, sizeVarMapping: Map[Nat, Nat], kernelArgs: List[KernelArg]) : Double
   protected def createLocalArg(sizeInBytes: Long) : KernelArg

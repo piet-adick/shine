@@ -9,7 +9,7 @@ import shine.DPIA._
 import shine.OpenCL.FunctionalPrimitives.{OpenCLReduceSeq, To}
 import shine.OpenCL._
 import shine.test_util
-import util.SyntaxChecker
+import util.{KernelNoSizes, SyntaxChecker}
 
 class dotProduct extends test_util.Tests {
 
@@ -28,7 +28,7 @@ class dotProduct extends test_util.Tests {
   val vecBTest = scala.Array(1f, 2f, 3f, 4f)
   val resultTest = dotproduct(vecATest, vecBTest)
 
-  test("dotproduct C") {
+  testCU("dotproduct C") {
     // def dotproduct = fun((v,w) => reduce(+, 0) <<: map(*) <<: zip(v,w)) // rise
 
     val dot = DepLambda[NatKind](n)(
@@ -38,7 +38,12 @@ class dotProduct extends test_util.Tests {
             MapSeq(n, PairType(f32, f32), f32, mul,
               Zip(n, f32, f32, vecA, vecB))))))
 
-    println(ProgramGenerator.makeCode(dot, "dot-product").code)
+    val kernel = KernelNoSizes(ProgramGenerator.makeCode(dot, "dotProduct"))
+
+    println("dotProduct C-Code:")
+    println(kernel.code)
+
+    checkDotKernel(kernel)
   }
 
   testCL("dotproduct OpenCL") {
@@ -53,9 +58,6 @@ class dotProduct extends test_util.Tests {
 
     val kernel = shine.OpenCL.KernelGenerator.apply().makeCode(dot, "dotProduct")
     SyntaxChecker.checkOpenCL(kernel.code)
-
-    println("KernelCode:")
-    println(kernel.code)
 
     checkDotKernel(kernel)
   }

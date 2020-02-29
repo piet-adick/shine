@@ -10,7 +10,7 @@ import shine.OpenCL.FunctionalPrimitives.{MapGlobal, OpenCLReduceSeq, To}
 import shine.OpenCL._
 import shine.cuda.primitives.functional.MapThreads
 import shine.test_util
-import util.SyntaxChecker
+import util.{KernelNoSizes, SyntaxChecker}
 
 //GEMM = general matrix multiply
 //With A,B,C matrices
@@ -74,7 +74,12 @@ class gemm extends test_util.Tests {
                     Snd(ArrayType(m,f32), ArrayType(k, f32), rowAC)))),
               Zip(n, ArrayType(m, f32), ArrayType(k, f32), matA, matC))))))))
 
-    println(ProgramGenerator.makeCode(gemm, "gemm").code)
+    val kernel = KernelNoSizes(ProgramGenerator.makeCode(gemm, "gemm"))
+
+    println("Gemm C-Code:")
+    println(kernel.code)
+
+    checkGEMMKernel(kernel)
   }
 
   testCL("GEMM OpenCL") {
