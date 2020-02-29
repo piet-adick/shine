@@ -1,6 +1,5 @@
 package shine.C
 
-import arithexpr.arithmetic.ArithExpr
 import shine.DPIA.Nat
 import shine.DPIA.Phrases.Identifier
 import shine.DPIA.Types.{AccType, DataType, ExpType}
