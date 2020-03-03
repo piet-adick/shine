@@ -81,7 +81,7 @@ abstract class Kernel(decls: Seq[C.AST.Decl],
           throw new Exception(errorMessage)
       }
 
-      val runtime = execute(localSize, globalSize, sizeVarMapping, kernelArgs)
+      val runtime = execute(localSize, globalSize, gridSize, sizeVarMapping, kernelArgs)
 
       val dt = outputParam.`type`.dataType
       assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])
