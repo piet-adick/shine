@@ -23,8 +23,6 @@ case class Program(decls: Seq[C.AST.Decl],
     C.AST.Printer(function)
 
   override protected def execute(localSize: LocalSize, globalSize: GlobalSize, sizeVarMapping: Map[Nat, Nat], kernelArgs: List[KernelArg]): Double = {
-    //TODO use yacx.CProgram-class to specify right CTypes eg. "int32_t" and not "int"
-
     val kernelArgsCUDA = kernelArgs.map(_.asInstanceOf[KernelArgCUDA].kernelArg)
 
     val runtime = Executor.executeC(code, this.function.name, kernelArgsCUDA.toArray: _*)
@@ -32,7 +30,6 @@ case class Program(decls: Seq[C.AST.Decl],
     runtime.asInstanceOf[Double]
   }
 
-  //TODO: how does this works for CUDA?
   override protected def findParameterMappings(arguments: List[Argument], localSize: LocalSize, globalSize: GlobalSize): Map[Nat, Nat] = {
     val numGroups: NDRange = (
       globalSize.size.x /^ localSize.size.x,
