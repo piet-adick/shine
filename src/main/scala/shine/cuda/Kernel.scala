@@ -28,15 +28,15 @@ case class Kernel(decls: Seq[C.AST.Decl],
       globalSize.size.y /^ localSize.size.y,
       globalSize.size.z /^ localSize.size.z)
     val sizeVarMapping = collectSizeVars(arguments, Map(
-      get_num_groups(0) -> numGroups.x,
-      get_num_groups(1) -> numGroups.y,
-      get_num_groups(2) -> numGroups.z,
-      get_local_size(0) -> localSize.size.x,
-      get_local_size(1) -> localSize.size.y,
-      get_local_size(2) -> localSize.size.z,
-      get_global_size(0) -> globalSize.size.x,
-      get_global_size(1) -> globalSize.size.y,
-      get_global_size(2) -> globalSize.size.z
+      gridDim('x') -> numGroups.x,
+      gridDim('y') -> numGroups.y,
+      gridDim('z') -> numGroups.z,
+      blockDim('x') -> localSize.size.x,
+      blockDim('y') -> localSize.size.y,
+      blockDim('z') -> localSize.size.z,
+      globalDim('x') -> globalSize.size.x,
+      globalDim('y') -> globalSize.size.y,
+      globalDim('z') -> globalSize.size.z
     ))
 
     sizeVarMapping
@@ -48,12 +48,12 @@ case class Kernel(decls: Seq[C.AST.Decl],
     val kernelArgsCUDA = kernelArgs.map(_.asInstanceOf[KernelArgCUDA].kernelArg)
 
     val runtime = kernel.launch(
+              ArithExpr.substitute(numGroups.x, sizeVarMapping).eval,
+              ArithExpr.substitute(numGroups.y, sizeVarMapping).eval,
+              ArithExpr.substitute(numGroups.z, sizeVarMapping).eval,
               ArithExpr.substitute(localSize.size.x, sizeVarMapping).eval,
               ArithExpr.substitute(localSize.size.y, sizeVarMapping).eval,
               ArithExpr.substitute(localSize.size.z, sizeVarMapping).eval,
-              ArithExpr.substitute(globalSize.size.x, sizeVarMapping).eval,
-              ArithExpr.substitute(globalSize.size.y, sizeVarMapping).eval,
-              ArithExpr.substitute(globalSize.size.z, sizeVarMapping).eval,
               kernelArgsCUDA.toArray: _*
     )
 
