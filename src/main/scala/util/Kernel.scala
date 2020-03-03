@@ -6,7 +6,7 @@ import shine.DPIA.Phrases.Identifier
 import shine.DPIA.Types._
 import shine.DPIA.{Nat, NatIdentifier, VarType}
 import shine.{C, OpenCL}
-import shine.OpenCL.{FunctionHelper, GlobalSize, HList, LocalSize}
+import shine.OpenCL.{FunctionHelper, GlobalSize, GridSize, HList, LocalSize, NDRange}
 
 import scala.language.implicitConversions
 import scala.collection.Seq
@@ -58,7 +58,12 @@ abstract class Kernel(decls: Seq[C.AST.Decl],
       val arguments = constructArguments(inputParams zip args, intermediateParams, this.kernel.params.tail)
 
       //First, we want to find all the parameter mappings
-      val sizeVarMapping = findParameterMappings(arguments, localSize, globalSize)
+      val numGroups: NDRange = (
+        globalSize.size.x /^ localSize.size.x,
+        globalSize.size.y /^ localSize.size.y,
+        globalSize.size.z /^ localSize.size.z)
+      val gridSize = GridSize(numGroups)
+      val sizeVarMapping = findParameterMappings(arguments, localSize, globalSize, gridSize)
 
       val (outputArg, inputArgs) = createKernelArgs(arguments, sizeVarMapping)
       val kernelArgs = outputArg :: inputArgs
@@ -90,8 +95,8 @@ abstract class Kernel(decls: Seq[C.AST.Decl],
 
   // TODO: Comments for the methods would be useful
   // make this methods abstract
-  protected def findParameterMappings(arguments: List[Argument], localSize: LocalSize, globalSize: GlobalSize) : Map[Nat, Nat]
-  protected def execute(localSize: LocalSize, globalSize: GlobalSize, sizeVarMapping: Map[Nat, Nat], kernelArgs: List[KernelArg]) : Double
+  protected def findParameterMappings(arguments: List[Argument], localSize: LocalSize, globalSize: GlobalSize, gridSize: GridSize) : Map[Nat, Nat]
+  protected def execute(localSize: LocalSize, globalSize: GlobalSize, gridSize: GridSize, sizeVarMapping: Map[Nat, Nat], kernelArgs: List[KernelArg]) : Double
   protected def createLocalArg(sizeInBytes: Long) : KernelArg
   protected def createOutputArg(numberOfElements: Int, dataType: DataType) : KernelArg
   protected def asArray[R](dt: DataType, output: KernelArg): R

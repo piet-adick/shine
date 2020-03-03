@@ -17,3 +17,5 @@ case class NDRange(x: Nat, y: Nat, z: Nat) {
 case class LocalSize(size: NDRange)
 
 case class GlobalSize(size: NDRange)
+
+case class GridSize(size: NDRange)

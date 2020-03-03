@@ -6,7 +6,7 @@ import shine.DPIA.Phrases.Identifier
 import shine.DPIA.Types._
 import shine.DPIA.{Nat, VarType}
 import shine.{C, OpenCL}
-import shine.OpenCL.{GlobalSize, LocalSize, NDRange, get_global_size, get_local_size, get_num_groups}
+import shine.OpenCL.{GlobalSize, GridSize, LocalSize, NDRange, get_global_size, get_local_size, get_num_groups}
 import yacx.{ByteArg, DoubleArg, FloatArg, HalfArg, IntArg, LongArg, Program, ShortArg}
 
 import scala.collection.Seq
@@ -22,15 +22,11 @@ case class Kernel(decls: Seq[C.AST.Decl],
                  ) extends util.Kernel(decls, kernel, outputParam, inputParams, intermediateParams, printer) {
 
   //TODO: how does this works for CUDA?
-  override protected def findParameterMappings(arguments: List[Argument], localSize: LocalSize, globalSize: GlobalSize): Map[Nat, Nat] = {
-    val numGroups: NDRange = (
-      globalSize.size.x /^ localSize.size.x,
-      globalSize.size.y /^ localSize.size.y,
-      globalSize.size.z /^ localSize.size.z)
+  override protected def findParameterMappings(arguments: List[Argument], localSize: LocalSize, globalSize: GlobalSize, gridSize: GridSize): Map[Nat, Nat] = {
     val sizeVarMapping = collectSizeVars(arguments, Map(
-      gridDim('x') -> numGroups.x,
-      gridDim('y') -> numGroups.y,
-      gridDim('z') -> numGroups.z,
+      gridDim('x') -> gridSize.size.x,
+      gridDim('y') -> gridSize.size.y,
+      gridDim('z') -> gridSize.size.z,
       blockDim('x') -> localSize.size.x,
       blockDim('y') -> localSize.size.y,
       blockDim('z') -> localSize.size.z,
@@ -42,22 +38,22 @@ case class Kernel(decls: Seq[C.AST.Decl],
     sizeVarMapping
   }
 
-  override protected def execute(localSize: LocalSize, globalSize: GlobalSize, sizeVarMapping: Map[Nat, Nat], kernelArgs: List[KernelArg]): Double = {
+  override protected def execute(localSize: LocalSize, globalSize: GlobalSize, gridSize: GridSize, sizeVarMapping: Map[Nat, Nat], kernelArgs: List[KernelArg]): Double = {
     val kernel = Program.create(code, this.kernel.name).compile()
 
     val kernelArgsCUDA = kernelArgs.map(_.asInstanceOf[KernelArgCUDA].kernelArg)
 
     val runtime = kernel.launch(
-              ArithExpr.substitute(numGroups.x, sizeVarMapping).eval,
-              ArithExpr.substitute(numGroups.y, sizeVarMapping).eval,
-              ArithExpr.substitute(numGroups.z, sizeVarMapping).eval,
+              ArithExpr.substitute(gridSize.size.x, sizeVarMapping).eval,
+              ArithExpr.substitute(gridSize.size.y, sizeVarMapping).eval,
+              ArithExpr.substitute(gridSize.size.z, sizeVarMapping).eval,
               ArithExpr.substitute(localSize.size.x, sizeVarMapping).eval,
               ArithExpr.substitute(localSize.size.y, sizeVarMapping).eval,
               ArithExpr.substitute(localSize.size.z, sizeVarMapping).eval,
               kernelArgsCUDA.toArray: _*
     )
 
-    runtime.getLaunch().asInstanceOf[Double]
+    runtime.getLaunch.asInstanceOf[Double]
   }
 
   //TODO

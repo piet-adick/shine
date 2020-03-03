@@ -24,7 +24,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
                  ) extends util.Kernel(decls, kernel, outputParam, inputParams, intermediateParams, printer) {
 
   def findParameterMappings(arguments: List[Argument], localSize: LocalSize, globalSize: GlobalSize) : Map[Nat, Nat] = ???
-  def execute(localSize: LocalSize, globalSize: GlobalSize, sizeVarMapping: Map[Nat, Nat], kernelArgs: List[KernelArg]) : Double = ???
+  def execute(localSize: LocalSize, globalSize: GlobalSize, gridSize: GridSize, sizeVarMapping: Map[Nat, Nat], kernelArgs: List[KernelArg]) : Double = ???
   def createOutputArg(numberOfElements: Int, dataType: DataType) : KernelArg = ???
   def asArray[R](dt: DataType, output: KernelArg): R = ???
   def createInputArg(arg: Any): KernelArg = ???
