@@ -1,10 +1,8 @@
 package benchmarks.core
 
-import shine.DPIA
-import shine.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
+import shine.OpenCL.{GlobalSize, LocalSize}
 import rise.core.Expr
-import rise.core.types.infer
-import util.{Display, Time, TimeSpan}
+import util.{Display, KernelWithSizes, Time, TimeSpan, gen}
 
 import scala.util.Random
 
@@ -24,7 +22,7 @@ abstract class RunOpenCLProgram(val verbose:Boolean) {
   protected def runScalaProgram(input:Input):Array[Float]
 
   private def compile(localSize:LocalSize, globalSize:GlobalSize):KernelWithSizes = {
-    val kernel = shine.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(DPIA.fromRise(infer(this.expr)), "KERNEL")
+    val kernel = gen.OpenCLKernel(localSize, globalSize)(this.expr, "KERNEL")
 
     if(verbose) {
       println(kernel.code)

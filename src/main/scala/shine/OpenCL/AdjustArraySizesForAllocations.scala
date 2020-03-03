@@ -8,6 +8,7 @@ import shine.DPIA.Types._
 import shine.DPIA._
 import shine.OpenCL.FunctionalPrimitives._
 import shine.OpenCL.ImperativePrimitives._
+import shine.cuda.primitives.functional.{MapBlock, MapGrid, MapThreads}
 
 object AdjustArraySizesForAllocations {
   case class DataTypeAdjustment(accF: Phrase[AccType] => Phrase[AccType],
@@ -34,6 +35,9 @@ object AdjustArraySizesForAllocations {
       case mG@MapGlobal(dim) => visitAndGatherInformation(mG.f, BasicInfo(Global, dim) :: parallInfo)
       case mWG@MapWorkGroup(dim) => visitAndGatherInformation(mWG.f, BasicInfo(WorkGroup, dim) :: parallInfo)
       case mL@MapLocal(dim) => visitAndGatherInformation(mL.f, BasicInfo(Local, dim) :: parallInfo)
+      case mG@MapThreads(dim) => visitAndGatherInformation(mG.f, BasicInfo(Global, dim) :: parallInfo)
+      case mWG@MapGrid(dim) => visitAndGatherInformation(mWG.f, BasicInfo(WorkGroup, dim) :: parallInfo)
+      case mL@MapBlock(dim) => visitAndGatherInformation(mL.f, BasicInfo(Local, dim) :: parallInfo)
       case mS: MapSeq => visitAndGatherInformation(mS.f, BasicInfo(Sequential, -1) :: parallInfo)
       case mS: MapSeqUnroll => visitAndGatherInformation(mS.f, BasicInfo(Sequential, -1) :: parallInfo)
 
@@ -92,7 +96,7 @@ object AdjustArraySizesForAllocations {
 
           val outerDimension = IdxDistributeAcc(adjSize, oldSize, stride, parallLevel, adjElemT, A)
 
-          val arr = identifier(freshName("x"), acc"[$adjElemT]")
+          val arr = identifier(freshName("x"), accT(adjElemT))
           val mapFunBody = adjustedAcceptor(parallInfo.tail, adjElemT, oldElemT, addrSpace)(arr)
 
           MapAcc(oldSize, adjElemT, mapFunBody.t.dataType, Lambda(arr, mapFunBody), outerDimension)
@@ -128,7 +132,7 @@ object AdjustArraySizesForAllocations {
 
           val outerDimension = IdxDistribute(adjSize, oldSize, stride, parallLevel, adjElemT, E)
 
-          val arr = identifier(freshName("arr"), exp"[$adjElemT, $read]")
+          val arr = identifier(freshName("arr"), expT(adjElemT, read))
           val mapFunBody = adjustedExpr(parallInfo.tail, adjElemT, oldElemT, addrSpace)(arr)
 
           Map(oldSize, adjElemT, mapFunBody.t.dataType, Lambda(arr, mapFunBody), outerDimension)

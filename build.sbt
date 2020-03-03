@@ -2,13 +2,13 @@ ThisBuild / scalaVersion := "2.12.10"
 ThisBuild / organization := "org.rise-lang"
 
 lazy val shine = (project in file("."))
-  .aggregate(executor)
-  .dependsOn(executor, elevate, rise)
+  .aggregate(executor, CUexecutor)
+  .dependsOn(executor, CUexecutor, elevate, rise)
   .settings(
     name    := "shine",
     version := "1.0",
 
-    javaOptions ++= Seq("-Djava.library.path=lib/executor/lib/Executor/build", "-Xss16m"),
+    javaOptions ++= Seq("-Djava.library.path=lib/yacx/build:lib/executor/lib/Executor/build", "-Xss20m"),
 
     scalacOptions ++= Seq(
       "-Xfatal-warnings",
@@ -42,6 +42,7 @@ lazy val shine = (project in file("."))
   )
 
 lazy val executor   = (project in file("lib/executor"))
+lazy val CUexecutor = (project in file("lib/yacx"))
 
 lazy val rise       = (project in file("lib/rise"))
 

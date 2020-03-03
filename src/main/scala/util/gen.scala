@@ -25,26 +25,34 @@ object gen {
     p
   }
 
-  def OpenCLKernel(e: rise.core.Expr, name: String = "foo"): shine.OpenCL.KernelNoSizes = {
+  def OpenCLKernel(e: rise.core.Expr, name: String = "foo"): util.KernelNoSizes = {
     val dpia_e = toDPIA(e)
-    val p = shine.OpenCL.KernelGenerator.makeCode(dpia_e, name)
+    val p = shine.OpenCL.KernelGenerator().makeCode(dpia_e, name)
     println(p.code)
     SyntaxChecker.checkOpenCL(p.code)
     p
   }
 
   def OpenCLKernel(localSize: LocalSize, globalSize: GlobalSize)
-                  (e: rise.core.Expr, name: String): shine.OpenCL.KernelWithSizes = {
+                  (e: rise.core.Expr, name: String): util.KernelWithSizes = {
     OpenCLKernel(_ => (localSize, globalSize))(e, name)
   }
 
   def OpenCLKernel(localGlobalSize: DPIA.Phrases.Phrase[_ <: DPIA.Types.PhraseType] => (LocalSize, GlobalSize))
-                  (e: rise.core.Expr, name: String): shine.OpenCL.KernelWithSizes = {
+                  (e: rise.core.Expr, name: String): util.KernelWithSizes = {
     val dpia_e = toDPIA(e)
     val (localSize, globalSize) = localGlobalSize(dpia_e)
-    val p = shine.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(dpia_e, name)
+    val p = shine.OpenCL.KernelGenerator().makeCode(localSize, globalSize)(dpia_e, name)
     println(p.code)
     SyntaxChecker.checkOpenCL(p.code)
+    p
+  }
+
+  def cuKernel(e: rise.core.Expr, name: String = "foo"): util.KernelNoSizes = {
+    val dpia_e = toDPIA(e)
+    val p = shine.cuda.KernelGenerator().makeCode(dpia_e, name)
+    println(p.code)
+    // SyntaxChecker.checkCUDA(p.code)
     p
   }
 }

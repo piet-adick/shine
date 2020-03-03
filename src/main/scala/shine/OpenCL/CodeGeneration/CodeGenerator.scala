@@ -17,6 +17,7 @@ import shine.OpenCL.BuiltInFunctionCall
 import shine.OpenCL.FunctionalPrimitives.OpenCLFunction
 import shine.OpenCL.ImperativePrimitives._
 import shine._
+import shine.cuda.BuiltInAttribute
 
 import scala.collection.{immutable, mutable}
 
@@ -218,6 +219,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
   override def genNat(n: Nat, env: Environment, cont:Expr => Stmt): Stmt = n match {
     case of: BuiltInFunctionCall => cont(C.AST.Literal(of.toString))
+    case of: BuiltInAttribute => cont(C.AST.Literal(of.toString))
     case _ => super.genNat(n, env, cont)
   }
 
