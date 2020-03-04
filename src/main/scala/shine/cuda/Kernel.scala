@@ -5,16 +5,17 @@ import shine.C.AST.Node
 import shine.DPIA.Phrases.Identifier
 import shine.DPIA.Types._
 import shine.DPIA.{Nat, VarType}
-import shine.{C, OpenCL}
+import shine.C
 import shine.OpenCL.{GlobalSize, LocalSize, NDRange, get_global_size, get_local_size, get_num_groups}
 import yacx.{ByteArg, DoubleArg, FloatArg, HalfArg, IntArg, LongArg, Program, ShortArg}
 
 import scala.collection.Seq
 import scala.collection.immutable.List
 
+//TODO: this class needs to be refatored
 //noinspection ScalaDocParserErrorInspection
 case class Kernel(decls: Seq[C.AST.Decl],
-                  kernel: OpenCL.AST.KernelDecl,
+                  kernel: C.AST.FunDecl, //TODO
                   outputParam: Identifier[AccType],
                   inputParams: Seq[Identifier[ExpType]],
                   intermediateParams: Seq[Identifier[VarType]],

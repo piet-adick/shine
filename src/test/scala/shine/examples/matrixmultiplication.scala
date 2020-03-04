@@ -10,7 +10,7 @@ import shine.OpenCL.FunctionalPrimitives.{MapGlobal, OpenCLReduceSeq, To}
 import shine.OpenCL._
 import shine.cuda.primitives.functional.MapThreads
 import shine.test_util
-import util.SyntaxChecker
+import util.{KernelNoSizes, SyntaxChecker}
 
 class matrixmultiplication extends test_util.Tests {
 
@@ -60,7 +60,12 @@ class matrixmultiplication extends test_util.Tests {
                 Transpose(m, r, f32, matrixB))),
             matrixA))))))
 
-    println(ProgramGenerator.makeCode(matrixMult, "matrixMult").code)
+    val kernel = KernelNoSizes(ProgramGenerator.makeCode(matrixMult, "matrixMult"))
+
+    println("matrixMult C-Code:")
+    println(kernel.code)
+
+    checkMatrixMultKernel(kernel)
   }
 
   testCL("matrixMult OpenCL") {
