@@ -83,6 +83,9 @@ abstract class Kernel(decls: Seq[C.AST.Decl],
       assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])
       val output = asArray[F#R](getOutputType(dt), outputArg)
 
+      val kernelArgsCUDA = kernelArgs.map(_.asInstanceOf[KernelArgCUDA].kernelArg)
+      kernelArgsCUDA.foreach(_.dispose)
+
       //TODO dispose arguments, Kernel
 
       (output, TimeSpan.inMilliseconds(runtime))

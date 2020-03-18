@@ -9,7 +9,7 @@ import shine.DPIA._
 import shine.OpenCL.FunctionalPrimitives.{OpenCLReduceSeq, To}
 import shine.OpenCL._
 import shine.test_util
-import util.{KernelNoSizes, SyntaxChecker}
+import util.{KernelNoSizes}
 
 class dotProduct extends test_util.Tests {
 
@@ -43,6 +43,7 @@ class dotProduct extends test_util.Tests {
     println("dotProduct C-Code:")
     println(kernel.code)
 
+    println("dotProduct C Datasize")
     checkDotKernel(kernel)
   }
 
@@ -57,8 +58,8 @@ class dotProduct extends test_util.Tests {
             false))))
 
     val kernel = shine.OpenCL.KernelGenerator.apply().makeCode(dot, "dotProduct")
-    SyntaxChecker.checkOpenCL(kernel.code)
 
+    println("dotProduct OpenCL: DataSize")
     checkDotKernel(kernel)
   }
 
@@ -74,24 +75,45 @@ class dotProduct extends test_util.Tests {
 
     val kernel = shine.cuda.KernelGenerator.apply().makeCode(dot, "dotProduct")
 
+    println("dotProduct CUDA: DataSize")
     checkDotKernel(kernel)
   }
 
+  val KB = 1024l
+  val MB = KB*KB
+
+  val dataSizes = scala.Array(
+  1 * KB,
+  4 * KB,
+  16 * KB,
+  64 * KB,
+  256 * KB,
+  1 * MB,
+  4 * MB,
+  16 * MB,
+  64 * MB,
+  256 * MB)
+
   private def checkDotKernel(kernel: util.KernelNoSizes): Unit ={
+
     val scalaFun = kernel.as[ScalaFunction`(`Int `,` scala.Array[Float]`,` scala.Array[Float]`)=>`scala.Array[Float]].withSizes(LocalSize(1), GlobalSize(1))
 
-    val (result, _) = scalaFun(vecATest.length `,` vecATest `,` vecBTest)
+    //Benchmark
+    for (dataSize <- dataSizes){
+      val n = (dataSize/4).asInstanceOf[Int]
 
-    if (!similar(result(0), resultTest)){
-      print("Expected: ")
-      println(resultTest)
-      print("Result: ")
-      println(result(0))
+      val x: scala.Array[Float] = new scala.Array[Float](n)
+      val y: scala.Array[Float] = new scala.Array[Float](n)
 
-      println("KernelCode:")
-      println(kernel.code)
+      for (i <- 0 until n) {
+        x(i) = i
+        y(i) = 2 * i
+      }
 
-      throw new RuntimeException("false result")
+      val (_, runtime) = scalaFun(n `,` x `,` y)
+
+      print("DataSize: " + Print.humanReadableByteCountBin(dataSize) + " ")
+      println("execution-time: " + runtime)
     }
   }
 

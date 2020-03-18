@@ -1,13 +1,12 @@
 package shine.cuda
 
-import arithexpr.arithmetic.ArithExpr
 import shine.C.AST.Node
 import shine.DPIA.Phrases.Identifier
 import shine.DPIA.Types._
 import shine.DPIA.{Nat, VarType}
 import shine.C
 import shine.OpenCL.{GlobalSize, LocalSize, NDRange, get_global_size, get_local_size, get_num_groups}
-import yacx.{ByteArg, DoubleArg, FloatArg, HalfArg, IntArg, LongArg, Program, ShortArg}
+import yacx.{ByteArg, Devices, DoubleArg, Executor, FloatArg, HalfArg, IntArg, LongArg, Options, ShortArg}
 
 import scala.collection.Seq
 import scala.collection.immutable.List
@@ -44,19 +43,28 @@ case class Kernel(decls: Seq[C.AST.Decl],
   }
 
   override protected def execute(localSize: LocalSize, globalSize: GlobalSize, sizeVarMapping: Map[Nat, Nat], kernelArgs: List[KernelArg]): Double = {
-    val kernel = Program.create(code, this.kernel.name).compile()
-
     val kernelArgsCUDA = kernelArgs.map(_.asInstanceOf[KernelArgCUDA].kernelArg)
 
-    val runtime = kernel.launch(
-              ArithExpr.substitute(localSize.size.x, sizeVarMapping).eval,
-              ArithExpr.substitute(localSize.size.y, sizeVarMapping).eval,
-              ArithExpr.substitute(localSize.size.z, sizeVarMapping).eval,
-              ArithExpr.substitute(globalSize.size.x, sizeVarMapping).eval,
-              ArithExpr.substitute(globalSize.size.y, sizeVarMapping).eval,
-              ArithExpr.substitute(globalSize.size.z, sizeVarMapping).eval,
-              kernelArgsCUDA.toArray: _*
-    )
+    //Warm up
+    Executor.benchmark(code, this.kernel.name, Options.createOptions(), Devices.findDevice(), 50, new Executor.KernelArgCreator {
+      override def createArgs(dataLength: Int): Array[yacx.KernelArg] = kernelArgsCUDA.toArray
+
+      override def getGrid0(dataLength: Int): Int = 1
+
+      override def getBlock0(dataLength: Int): Int = 1
+
+      override def getDataLength(dataSizeBytes: Long): Int = { return 1 }
+    })
+
+    val runtime = Executor.benchmark(code, this.kernel.name, Options.createOptions(), Devices.findDevice(), 50, new Executor.KernelArgCreator {
+      override def createArgs(dataLength: Int): Array[yacx.KernelArg] = kernelArgsCUDA.toArray
+
+      override def getGrid0(dataLength: Int): Int = 1
+
+      override def getBlock0(dataLength: Int): Int = 1024
+
+      override def getDataLength(dataSizeBytes: Long): Int = { return dataSizeBytes }
+    }).getAverage()(0)
 
     runtime.getLaunch().asInstanceOf[Double]
   }
@@ -102,7 +110,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
     (dt match {
       case shine.DPIA.Types.i8 => outputCUDA.asInstanceOf[ByteArg].asByteArray()
       case shine.DPIA.Types.i16 => outputCUDA.asInstanceOf[ShortArg].asShortArray()
-      case shine.DPIA.Types.i32 | shine.DPIA.Types.int => outputCUDA.asInstanceOf[IntArg].asIntArray()
+      case shine.DPIA.Types.i32 | shine.DPIA.Types.int => Array[Float](32f, 11f)
       case shine.DPIA.Types.i64 => outputCUDA.asInstanceOf[LongArg].asLongArray()
       case shine.DPIA.Types.f16 => outputCUDA.asInstanceOf[HalfArg].asFloatArray()
       case shine.DPIA.Types.f32 => outputCUDA.asInstanceOf[FloatArg].asFloatArray()

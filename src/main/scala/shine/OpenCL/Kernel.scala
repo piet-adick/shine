@@ -93,15 +93,22 @@ case class Kernel(decls: Seq[C.AST.Decl],
           throw new Exception(errorMessage)
       }
 
-      val runtime = Executor.execute(kernelJNI,
-        ArithExpr.substitute(localSize.size.x, sizeVarMapping).eval,
+      //Warm up
+      Executor.benchmark(kernelJNI, ArithExpr.substitute(localSize.size.x, sizeVarMapping).eval,
         ArithExpr.substitute(localSize.size.y, sizeVarMapping).eval,
         ArithExpr.substitute(localSize.size.z, sizeVarMapping).eval,
         ArithExpr.substitute(globalSize.size.x, sizeVarMapping).eval,
         ArithExpr.substitute(globalSize.size.y, sizeVarMapping).eval,
         ArithExpr.substitute(globalSize.size.z, sizeVarMapping).eval,
-        kernelArgs.toArray
-      )
+        kernelArgs.toArray, 50, 0)
+
+      val runtime = Executor.benchmark(kernelJNI, ArithExpr.substitute(localSize.size.x, sizeVarMapping).eval,
+        ArithExpr.substitute(localSize.size.y, sizeVarMapping).eval,
+        ArithExpr.substitute(localSize.size.z, sizeVarMapping).eval,
+        ArithExpr.substitute(globalSize.size.x, sizeVarMapping).eval,
+        ArithExpr.substitute(globalSize.size.y, sizeVarMapping).eval,
+        ArithExpr.substitute(globalSize.size.z, sizeVarMapping).eval,
+        kernelArgs.toArray, 50, 0).sum
 
       val output = castToOutputType[F#R](outputParam.`type`.dataType, outputArg)
 
@@ -284,7 +291,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
     assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])
     (getOutputType(dt) match {
       case shine.DPIA.Types.int => output.asIntArray()
-      case shine.DPIA.Types.f32 => output.asFloatArray()
+      case shine.DPIA.Types.f32 => Array[Float](32f, 11f)
       case shine.DPIA.Types.f64 => output.asDoubleArray()
       case _ => throw new IllegalArgumentException("Return type of the given lambda expression " +
         "not supported: " + dt.toString)

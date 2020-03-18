@@ -79,6 +79,7 @@ class gemm extends test_util.Tests {
     println("Gemm C-Code:")
     println(kernel.code)
 
+    println("GEMM C: DataSize")
     checkGEMMKernel(kernel)
   }
 
@@ -89,7 +90,7 @@ class gemm extends test_util.Tests {
           Lambda[ExpType, ExpType](matC,
             MapGlobal(0)(n, PairType(ArrayType(m, f32), ArrayType(k, f32)), ArrayType(k, f32),
               Lambda[ExpType, ExpType] (rowAC,
-                MapGlobal(0)(k, PairType(ArrayType(m, f32), f32), f32,
+                MapGlobal(1)(k, PairType(ArrayType(m, f32), f32), f32,
                   Lambda[ExpType, ExpType] (columnBFC,
                     BinOp(Operators.Binary.ADD,
                       dotproductCL,
@@ -102,6 +103,7 @@ class gemm extends test_util.Tests {
     val kernel = shine.OpenCL.KernelGenerator.apply().makeCode(gemm, "gemm")
     SyntaxChecker.checkOpenCL(kernel.code)
 
+    println("GEMM OpenCL: DataSize")
     checkGEMMKernel(kernel)
   }
 
@@ -124,28 +126,52 @@ class gemm extends test_util.Tests {
 
     val kernel = shine.cuda.KernelGenerator.apply().makeCode(gemm, "gemm")
 
+    println("GEMM CUDA: DataSize")
     checkGEMMKernel(kernel)
   }
 
+  val KB = 1024l
+  val MB = KB*KB
+
+  val dataSizes = scala.Array(
+    1 * KB,
+    4 * KB,
+    16 * KB,
+    64 * KB,
+    256 * KB,
+    1 * MB,
+    4 * MB,
+    16 * MB,
+    64 * MB,
+    256 * MB)
+
+  def ofDim(n1: Int, n2: Int): Array[Array[Float]] = {
+    val arr: Array[Array[Float]] = (new Array[Array[Float]](n1): Array[Array[Float]])
+    for (i <- 0 until n1) arr(i) = new Array[Float](n2)
+    arr
+  }
+
   private def checkGEMMKernel(kernel: util.KernelNoSizes): Unit ={
-    val scalaFun = kernel.as[ScalaFunction`(`Int `,` Int `,` Int `,` scala.Array[scala.Array[Float]] `,` scala.Array[scala.Array[Float]] `,` scala.Array[scala.Array[Float]] `)=>` scala.Array[Float]].withSizes(LocalSize(1), GlobalSize(1))
+    //Benchmark
+    for (dataSize <- dataSizes){
+      val scalaFun = kernel.as[ScalaFunction`(`Int `,` Int `,` Int `,` scala.Array[scala.Array[Float]] `,` scala.Array[scala.Array[Float]] `,` scala.Array[scala.Array[Float]] `)=>` scala.Array[Float]].withSizes(LocalSize(1), GlobalSize(1))
 
-    val (result, _) = scalaFun(matrixATest.length `,` matrixBTest.length `,` matrixBTest.transpose.length `,` matrixATest `,` matrixBTest `,` matrixCTest)
+      val n = Math.sqrt(dataSize/4).asInstanceOf[Int]
 
-    val resultTestArray = resultTest.flatMap(_.toList)
+      val a = ofDim(n, n)
+      val b = ofDim(n, n)
+      val c = ofDim(n, n)
 
-    if (!(result sameElements resultTestArray)){
-      val resultMatrix = result.sliding(matrixBTest.length, matrixBTest.length).toArray
+      for (row <- 0 until n){
+        for (column <- 0 until n){
+          a(row)(column) = row*n + column
+        }
+      }
 
-      println("Expected: ")
-      println(resultTest.deep.mkString("\n"))
-      println("Result: ")
-      println(resultMatrix.deep.mkString("\n"))
+      val (_, runtime) = scalaFun(a.length `,` b.length `,` b.transpose.length `,` a `,` b `,` c)
 
-      println("KernelCode:")
-      println(kernel.code)
-
-      throw new RuntimeException("false result")
+      print("DataSize: " + Print.humanReadableByteCountBin(dataSize) + " ")
+      print("execution-time: " + runtime)
     }
   }
 

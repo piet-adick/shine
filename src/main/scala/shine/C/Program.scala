@@ -25,9 +25,15 @@ case class Program(decls: Seq[C.AST.Decl],
   override protected def execute(localSize: LocalSize, globalSize: GlobalSize, sizeVarMapping: Map[Nat, Nat], kernelArgs: List[KernelArg]): Double = {
     val kernelArgsCUDA = kernelArgs.map(_.asInstanceOf[KernelArgCUDA].kernelArg)
 
-    val runtime = Executor.executeC(code, this.function.name, kernelArgsCUDA.toArray: _*)
+    //Warm up
+    Executor.executeC(code, this.function.name, kernelArgsCUDA.toArray: _*)
 
-    runtime.asInstanceOf[Double]
+    var runtime = 0d;
+    for (i <- 0 until 50) {
+      runtime += Executor.executeC(code, this.function.name, kernelArgsCUDA.toArray: _*)
+    }
+
+    (runtime/50d).asInstanceOf[Double]
   }
 
   override protected def findParameterMappings(arguments: List[Argument], localSize: LocalSize, globalSize: GlobalSize): Map[Nat, Nat] = {
