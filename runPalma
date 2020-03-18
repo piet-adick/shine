@@ -38,9 +38,9 @@ fi
 
 #Run
 echo "DotproductBenchmark" > Benchmark.txt
-../sbt/bin/sbt "testOnly shine.examples.dotProduct" | grep "DataSize" >> Benchmark.txt
+../sbt/bin/sbt "testOnly shine.examples.dotProduct" >> Benchmark.txt
 echo "" >> Benchmark.txt
 echo "GEMMBenchmark2" >> Benchmark.txt
-../sbt/bin/sbt "testOnly shine.examples.gemm" | grep "DataSize" >> Benchmark.txt
+../sbt/bin/sbt "testOnly shine.examples.gemm" >> Benchmark.txt
 echo "" >> Benchmark.txt
 cat Benchmark.txt

@@ -54,7 +54,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
       override def getBlock0(dataLength: Int): Int = 1
 
       override def getDataLength(dataSizeBytes: Long): Int = { return 1 }
-    })
+    }, 1)
 
     val runtime = Executor.benchmark(code, this.kernel.name, Options.createOptions(), Devices.findDevice(), 50, new Executor.KernelArgCreator {
       override def createArgs(dataLength: Int): Array[yacx.KernelArg] = kernelArgsCUDA.toArray
@@ -63,8 +63,8 @@ case class Kernel(decls: Seq[C.AST.Decl],
 
       override def getBlock0(dataLength: Int): Int = 1024
 
-      override def getDataLength(dataSizeBytes: Long): Int = { return dataSizeBytes }
-    }).getAverage()(0)
+      override def getDataLength(dataSizeBytes: Long): Int = { return 1 }
+    }, 1).getAverage()(0)
 
     runtime.getLaunch().asInstanceOf[Double]
   }

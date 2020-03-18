@@ -43,7 +43,7 @@ class dotProduct extends test_util.Tests {
     println("dotProduct C-Code:")
     println(kernel.code)
 
-    println("dotProduct C Datasize")
+    println("dotProduct C DataSize")
     checkDotKernel(kernel)
   }
 
@@ -86,13 +86,13 @@ class dotProduct extends test_util.Tests {
   1 * KB,
   4 * KB,
   16 * KB,
-  64 * KB,
-  256 * KB,
-  1 * MB,
-  4 * MB,
-  16 * MB,
-  64 * MB,
-  256 * MB)
+  64 * KB)
+//  256 * KB,
+//  1 * MB,
+  //4 * MB)
+ // 16 * MB,
+ // 64 * MB,
+ // 256 * MB)
 
   private def checkDotKernel(kernel: util.KernelNoSizes): Unit ={
 
