@@ -26,12 +26,12 @@ case class Program(decls: Seq[C.AST.Decl],
     val kernelArgsCUDA = kernelArgs.map(_.asInstanceOf[KernelArgCUDA].kernelArg)
 
     //Warm up
-    for (i <- 0 until 2) {
+    for (i <- 0 until 50) {
       Executor.executeC(code, this.function.name, kernelArgsCUDA.toArray: _*)
     }
 
     var runtime = 0d;
-    for (i <- 0 until 2) {
+    for (i <- 0 until 50) {
       runtime += Executor.executeC(code, this.function.name, kernelArgsCUDA.toArray: _*)
     }
 

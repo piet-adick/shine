@@ -136,13 +136,13 @@ class gemm extends test_util.Tests {
     1 * KB,
     4 * KB,
     16 * KB,
-    64 * KB)
-    //256 * KB,
-    //1 * MB,
-    //4 * MB,
-    //16 * MB,
-    //64 * MB,
-    //256 * MB)
+    64 * KB,
+    256 * KB,
+    1 * MB)
+//    4 * MB,
+//    16 * MB,
+//    64 * MB,
+//    256 * MB)
 
   def ofDim(n1: Int, n2: Int): Array[Array[Float]] = {
     val arr: Array[Array[Float]] = (new Array[Array[Float]](n1): Array[Array[Float]])

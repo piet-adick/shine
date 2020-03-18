@@ -100,7 +100,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
         ArithExpr.substitute(globalSize.size.x, sizeVarMapping).eval,
         ArithExpr.substitute(globalSize.size.y, sizeVarMapping).eval,
         ArithExpr.substitute(globalSize.size.z, sizeVarMapping).eval,
-        kernelArgs.toArray, 2, 0)
+        kernelArgs.toArray, 50, 0)
 
       val runtime = Executor.benchmark(kernelJNI, ArithExpr.substitute(localSize.size.x, sizeVarMapping).eval,
         ArithExpr.substitute(localSize.size.y, sizeVarMapping).eval,
@@ -108,7 +108,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
         ArithExpr.substitute(globalSize.size.x, sizeVarMapping).eval,
         ArithExpr.substitute(globalSize.size.y, sizeVarMapping).eval,
         ArithExpr.substitute(globalSize.size.z, sizeVarMapping).eval,
-        kernelArgs.toArray, 2, 0).sum
+        kernelArgs.toArray, 50, 0).sum
 
       val output = castToOutputType[F#R](outputParam.`type`.dataType, outputArg)
 

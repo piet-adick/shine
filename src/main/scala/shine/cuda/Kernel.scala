@@ -1,6 +1,5 @@
 package shine.cuda
 
-import arithexpr.arithmetic.ArithExpr
 import shine.C.AST.Node
 import shine.DPIA.Phrases.Identifier
 import shine.DPIA.Types._
@@ -47,19 +46,15 @@ case class Kernel(decls: Seq[C.AST.Decl],
     val kernelArgsCUDA = kernelArgs.map(_.asInstanceOf[KernelArgCUDA].kernelArg)
 
     //Warm up
-    for (i <- 0 until 2) {
+    for (i <- 0 until 50) {
       Executor.launch(code, this.kernel.name, 1024, 1024, kernelArgsCUDA.toArray: _*)
     }
 
-    val runtime = Executor.benchmark(code, this.kernel.name, Options.createOptions(), Devices.findDevice(), 2, new Executor.KernelArgCreator {
+    val runtime = yacx.Executor.benchmark(code, this.kernel.name, yacx.Options.createOptions(), yacx.Devices.findDevice(), 50, new yacx.Executor.KernelArgCreator {
       override def createArgs(dataLength: Int): Array[yacx.KernelArg] = kernelArgsCUDA.toArray
 
-      override def getGrid0(dataLength: Int): Int = ArithExpr.substitute(localSize.size.x, sizeVarMapping).eval
-      override def getGrid1(dataLength: Int): Int = ArithExpr.substitute(localSize.size.y, sizeVarMapping).eval
-      override def getGrid2(dataLength: Int): Int = ArithExpr.substitute(localSize.size.z, sizeVarMapping).eval
-      override def getBlock0(dataLength: Int): Int = ArithExpr.substitute(globalSize.size.x /^ localSize.size.x, sizeVarMapping).eval
-      override def getBlock1(dataLength: Int): Int = ArithExpr.substitute(globalSize.size.y /^ localSize.size.y, sizeVarMapping).eval
-      override def getBlock2(dataLength: Int): Int = ArithExpr.substitute(globalSize.size.z /^ localSize.size.z, sizeVarMapping).eval
+      override def getGrid0(dataLength: Int): Int = 1
+      override def getBlock0(dataLength: Int): Int = 1
 
       override def getDataLength(dataSizeBytes: Long): Int = { return 1 }
     }, 1l).getAverage()(0)
