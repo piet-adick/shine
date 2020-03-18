@@ -1,0 +1,28 @@
+#!/bin/bash
+
+#Usage
+#./runPalmaCL OpenCLBenchmark
+
+MODULES='Java GCC/8.2.0-2.31.1 CUDA/10.1.105 CMake'
+MODULESADD="module add $MODULES"
+
+#Load modules
+$MODULESADD
+
+cd lib/executor
+
+#Build
+./buildExecutor.sh
+
+#Copy executorSrc to build
+cp -r src/main/java/opencl lib/Executor/build/
+
+#Copy Examples
+cp ../../src/test/scala/shine/examples/* lib/Executor/build/
+
+#Compile
+cd lib/Executor/build
+javac *.java
+
+#run
+java -ea -Djava.library.path=. "$@"

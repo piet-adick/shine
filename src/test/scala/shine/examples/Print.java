@@ -1,5 +1,3 @@
-package shine.examples;
-
 public class Print {
     public static String humanReadableByteCountBin(long bytes) {
         return bytes < 1024L ? bytes + " B"

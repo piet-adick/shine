@@ -1,4 +1,3 @@
-package shine.examples;
 
 import opencl.executor.GlobalArg;
 import opencl.executor.KernelArg;
@@ -51,7 +50,11 @@ public class OpenCLBenchmark {
                 //Float is 4 bytes
                 GlobalArg outputArg = GlobalArg.createOutput(dataLength*4);
 
-                return new KernelArg[]{outputArg, nArg, xArg, yArg};
+                //Noch zwei andere komische Argumente wegen dem komischen Kernel
+                GlobalArg x36 = GlobalArg.createOutput(4);
+                GlobalArg x38 = GlobalArg.createOutput(dataLength*4);
+
+                return new KernelArg[]{outputArg, nArg, xArg, yArg, x36, x38};
             }
 
             //Not sure about local and global size

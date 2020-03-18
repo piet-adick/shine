@@ -1,4 +1,3 @@
-package shine.examples;
 
 import opencl.executor.Kernel;
 import opencl.executor.KernelArg;
@@ -25,7 +24,7 @@ public class OpenCLBenchmarkUtils {
 //            64 * MB,
 //            256 * MB};
 
-    public static BenchmarkResult benchmark(String kernelName, String options, KernelArgCreator creator) throws IOException {
+    public static void benchmark(String kernelName, String options, KernelArgCreator creator) throws IOException {
         if (dataSizesBytes == null)
             throw new NullPointerException();
         if (dataSizesBytes.length == 0)
@@ -39,7 +38,7 @@ public class OpenCLBenchmarkUtils {
         long t0 = System.currentTimeMillis();
 
         // Create and compile Kernel
-        Kernel kernelJNI = opencl.executor.Kernel.create(loadFile(kernelName+".cu"), kernelName, options);
+        Kernel kernelJNI = opencl.executor.Kernel.create(loadFile(kernelName+".cl"), kernelName, options);
 
         // Array for result
         double[] result = new double[dataSizesBytes.length];
@@ -70,7 +69,9 @@ public class OpenCLBenchmarkUtils {
         // Absolute time Measurement
         long dt = System.currentTimeMillis() - t0;
 
-        return new BenchmarkResult(numberExecutions, dataSizesBytes, result, kernelName, dt);
+        BenchmarkResult r = new BenchmarkResult(numberExecutions, dataSizesBytes, result, kernelName, dt);
+
+        System.out.println(r);
     }
 
     /**
@@ -219,7 +220,7 @@ public class OpenCLBenchmarkUtils {
                 while (dataSize.length() < 10)
                     dataSize = " " + dataSize;
 
-                String result = "execution-time" + average[i];
+                String result = "execution-time: " + average[i];
 
                 buffer.append(dataSize);
                 buffer.append(": ");
