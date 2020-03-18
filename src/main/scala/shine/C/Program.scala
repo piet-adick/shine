@@ -26,14 +26,16 @@ case class Program(decls: Seq[C.AST.Decl],
     val kernelArgsCUDA = kernelArgs.map(_.asInstanceOf[KernelArgCUDA].kernelArg)
 
     //Warm up
-    Executor.executeC(code, this.function.name, kernelArgsCUDA.toArray: _*)
+    for (i <- 0 until 2) {
+      Executor.executeC(code, this.function.name, kernelArgsCUDA.toArray: _*)
+    }
 
     var runtime = 0d;
-    for (i <- 0 until 50) {
+    for (i <- 0 until 2) {
       runtime += Executor.executeC(code, this.function.name, kernelArgsCUDA.toArray: _*)
     }
 
-    (runtime/50d).asInstanceOf[Double]
+    runtime/2d
   }
 
   override protected def findParameterMappings(arguments: List[Argument], localSize: LocalSize, globalSize: GlobalSize): Map[Nat, Nat] = {

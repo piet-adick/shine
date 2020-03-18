@@ -59,6 +59,9 @@ class dotProduct extends test_util.Tests {
 
     val kernel = shine.OpenCL.KernelGenerator.apply().makeCode(dot, "dotProduct")
 
+    println("dotProduct OpenCL-Code:")
+    println(kernel.code)
+
     println("dotProduct OpenCL: DataSize")
     checkDotKernel(kernel)
   }

@@ -10,7 +10,7 @@ import shine.OpenCL.FunctionalPrimitives.{MapGlobal, OpenCLReduceSeq, To}
 import shine.OpenCL._
 import shine.cuda.primitives.functional.MapThreads
 import shine.test_util
-import util.{KernelNoSizes, SyntaxChecker}
+import util.{KernelNoSizes}
 
 //GEMM = general matrix multiply
 //With A,B,C matrices
@@ -101,7 +101,6 @@ class gemm extends test_util.Tests {
               Zip(n, ArrayType(m, f32), ArrayType(k, f32), matA, matC))))))))
 
     val kernel = shine.OpenCL.KernelGenerator.apply().makeCode(gemm, "gemm")
-    SyntaxChecker.checkOpenCL(kernel.code)
 
     println("GEMM OpenCL: DataSize")
     checkGEMMKernel(kernel)
@@ -154,7 +153,7 @@ class gemm extends test_util.Tests {
   private def checkGEMMKernel(kernel: util.KernelNoSizes): Unit ={
     //Benchmark
     for (dataSize <- dataSizes){
-      val scalaFun = kernel.as[ScalaFunction`(`Int `,` Int `,` Int `,` scala.Array[scala.Array[Float]] `,` scala.Array[scala.Array[Float]] `,` scala.Array[scala.Array[Float]] `)=>` scala.Array[Float]].withSizes(LocalSize(1), GlobalSize(1))
+      val scalaFun = kernel.as[ScalaFunction`(`Int `,` Int `,` Int `,` scala.Array[scala.Array[Float]] `,` scala.Array[scala.Array[Float]] `,` scala.Array[scala.Array[Float]] `)=>` scala.Array[Float]].withSizes(LocalSize(1), GlobalSize((1024, 1024, 1): shine.OpenCL.NDRange))
 
       val n = Math.sqrt(dataSize/4).asInstanceOf[Int]
 
