@@ -6,7 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
-public class OpenCLBenchmarkUtils {
+public class OpenCLBenchmarkUtilsReduce {
     final static long KB = 1024;
     final static long MB = 1024 * 1024;
 
@@ -45,13 +45,15 @@ public class OpenCLBenchmarkUtils {
         // Absolute time Measurement
         long t0 = System.currentTimeMillis();
 
-        // Create and compile Kernel
+        // Create and compile Kernels
         Kernel kernelJNI = opencl.executor.Kernel.create(loadFile(kernelName+".cl"), kernelName, options);
+		Kernel kernelJNI2 = opencl.executor.Kernel.create(loadFile("reduce2.cl"), "reduce2", options);
 
         // Array for result & total time
         double[] result = new double[dataSizesBytes.length];
 		double[] total = new double[dataSizesBytes.length];
 		long totalStart;
+		double total2;
 
 		System.out.println("Warming up...");
 		System.out.println("(Local = " + creator.getLocal0((int) (1 * MB)) + ", " + 
@@ -64,7 +66,8 @@ public class OpenCLBenchmarkUtils {
         //Warm up
           opencl.executor.Executor.benchmark(kernelJNI, creator.getLocal0((int) (1 * MB)), creator.getLocal1((int) (1 * MB)), creator.getLocal2((int) (1 * MB)),
           creator.getGlobal0((int) (1 * MB)), creator.getGlobal1((int) (1 * MB)), creator.getGlobal2((int) (1 * MB)), creator.createArgs((int) (1 * MB)), numberExecutions, 0);
-
+		  //opencl.executor.Executor.benchmark(kernelJNI2, creator.getLocal0((int) (1 * MB)), creator.getLocal1((int) (1 * MB)), creator.getLocal2((int) (1 * MB)),
+          //creator.getGlobal0((int) (1 * MB)), creator.getGlobal1((int) (1 * MB)), creator.getGlobal2((int) (1 * MB)), creator.createArgs((int) (1 * MB)), numberExecutions, 0);
 
         // Start run for every dataSize
         for (int i = 0; i < dataSizesBytes.length; i++) {
@@ -91,6 +94,31 @@ public class OpenCLBenchmarkUtils {
 																  args, numberExecutions, 0);
 
 			total[i] = (System.currentTimeMillis() - totalStart) / numberExecutions;
+            /*
+			// Prepare grid reduces
+			dataLength = creator.getGlobal0(dataLength);
+			System.out.println("Datalength = " + dataLength);
+			
+			while (dataLength > 1) {
+				local0 = creator.getLocal0(dataLength);
+				global0 = creator.getGlobal0(dataLength);
+				args = creator.createArgs(dataLength);
+				
+				totalStart = System.currentTimeMillis();
+				
+				// Simulate grid reduce
+				double[] resultI2 = opencl.executor.Executor.benchmark(kernelJNI2, local0, 1, 1, global0, 1, 1, args, numberExecutions, 0);
+			
+				total2 = (System.currentTimeMillis() - totalStart) / numberExecutions;
+				
+				dataLength = creator.getGlobal0(dataLength);
+				
+				// Add average times
+				total[i] += total2;
+				for (int k = 0; k < numberExecutions; k++) {
+					resultI[i] += resultI2[i];
+				}
+			}*/
 
             for (int j = 0; j < numberExecutions; j++)
                 result[i] += resultI[j];
