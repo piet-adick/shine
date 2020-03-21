@@ -10,7 +10,7 @@ public class OpenCLBenchmarkUtils {
     final static long KB = 1024;
     final static long MB = 1024 * 1024;
 
-    final static int numberExecutions = 10;
+    final static int numberExecutions = 30;
 
     final static long[] dataSizesBytes = new long[]{
 			1 * KB,
@@ -21,9 +21,9 @@ public class OpenCLBenchmarkUtils {
 			1 * MB,
 			4 * MB,
             16 * MB,
-			64 * MB};
-			//256 * MB};
-			//1024 * MB};
+			64 * MB,
+			256 * MB,
+			1024 * MB};
 			
 	public static String humanReadableByteCountBin(long bytes) {
             return bytes < 1024L ? bytes + " B"
@@ -54,16 +54,16 @@ public class OpenCLBenchmarkUtils {
 		long totalStart;
 
 		System.out.println("Warming up...");
-		System.out.println("(Local = " + creator.getLocal0((int) (1 * MB)) + ", " + 
-										 creator.getLocal1((int) (1 * MB)) + ", " + 
-										 creator.getLocal2((int) (1 * MB)) + ")");
-		System.out.println("(Global = " + creator.getGlobal0((int) (1 * MB)) + ", " + 
-										 creator.getGlobal1((int) (1 * MB)) + ", " + 
-										 creator.getGlobal2((int) (1 * MB)) + ")");
+		System.out.println("(Local = " + creator.getLocal0((int) (16 * MB)) + ", " + 
+										 creator.getLocal1((int) (16 * MB)) + ", " + 
+										 creator.getLocal2((int) (16 * MB)) + ")");
+		System.out.println("(Global = " + creator.getGlobal0((int) (16 * MB)) + ", " + 
+										 creator.getGlobal1((int) (16 * MB)) + ", " + 
+										 creator.getGlobal2((int) (16 * MB)) + ")");
 
         //Warm up
-          opencl.executor.Executor.benchmark(kernelJNI, creator.getLocal0((int) (1 * MB)), creator.getLocal1((int) (1 * MB)), creator.getLocal2((int) (1 * MB)),
-          creator.getGlobal0((int) (1 * MB)), creator.getGlobal1((int) (1 * MB)), creator.getGlobal2((int) (1 * MB)), creator.createArgs((int) (1 * MB)), numberExecutions, 0);
+          opencl.executor.Executor.benchmark(kernelJNI, creator.getLocal0((int) (16 * MB)), creator.getLocal1((int) (16 * MB)), creator.getLocal2((int) (16 * MB)),
+          creator.getGlobal0((int) (16 * MB)), creator.getGlobal1((int) (16 * MB)), creator.getGlobal2((int) (16 * MB)), creator.createArgs((int) (16 * MB)), 10, 0);
 
 
         // Start run for every dataSize
