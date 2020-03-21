@@ -18,17 +18,6 @@ public class OpenCLBenchmark {
         String kernel = "dotProduct";
         String options = "";
 
-        //test data
-        int n = 16;
-
-        float[] x = new float[n];
-        float[] y = new float[n];
-
-        for (int i = 0; i < n; i++) {
-            x[i] = i;
-            y[i] = n-i;
-        }
-
         //KernelArgeCreator
         OpenCLBenchmarkUtils.KernelArgCreator creator = new OpenCLBenchmarkUtils.KernelArgCreator(){
             @Override
@@ -38,7 +27,15 @@ public class OpenCLBenchmark {
 
             @Override
             public KernelArg[] createArgs(int dataLength) {
-                // for int-parameter n
+                float[] x = new float[dataLength];
+				float[] y = new float[dataLength];
+
+				for (int i = 0; i < dataLength; i++) {
+					x[i] = i;
+					y[i] = dataLength-i;
+				}
+				
+				// for int-parameter n
                 ValueArg nArg = ValueArg.create(dataLength);
 
                 //for input-arrays

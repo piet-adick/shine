@@ -8,21 +8,17 @@ import java.nio.file.Files;
 
 public class OpenCLBenchmarkUtils {
     final static long KB = 1024;
-    final static long MB = 2048;
+    final static long MB = 1024 * 1024;
 
-    final static int numberExecutions = 2;
+    final static int numberExecutions = 1;
 
     final static long[] dataSizesBytes = new long[]{
-            1 * KB,
-            4 * KB,
-            16 * KB,
-            64 * KB};
-//            256 * KB,
-//            1 * MB,
-//            4 * MB,
-//            16 * MB,
-//            64 * MB,
-//            256 * MB};
+			1 * MB,
+            4 * MB,
+            16 * MB,
+            64 * MB,
+			256 * MB};
+			//1024 * MB};
 
     public static void benchmark(String kernelName, String options, KernelArgCreator creator) throws IOException {
         if (dataSizesBytes == null)
@@ -40,12 +36,14 @@ public class OpenCLBenchmarkUtils {
         // Create and compile Kernel
         Kernel kernelJNI = opencl.executor.Kernel.create(loadFile(kernelName+".cl"), kernelName, options);
 
-        // Array for result
+        // Array for result & total time
         double[] result = new double[dataSizesBytes.length];
+		double[] total = new double[dataSizesBytes.length];
+		long totalStart;
 
         //Warm up
-        opencl.executor.Executor.benchmark(kernelJNI, creator.getLocal0((int) (16 * KB)), creator.getLocal1((int) (16 * KB)), creator.getLocal2((int) (16 * KB)),
-                creator.getGlobal0((int) (16 * KB)), creator.getGlobal1((int) (16 * KB)), creator.getGlobal2((int) (16 * KB)), creator.createArgs((int) (16 * KB)), numberExecutions, 0);
+          opencl.executor.Executor.benchmark(kernelJNI, creator.getLocal0((int) (1 * MB)), creator.getLocal1((int) (1 * MB)), creator.getLocal2((int) (1 * MB)),
+          creator.getGlobal0((int) (1 * MB)), creator.getGlobal1((int) (1 * MB)), creator.getGlobal2((int) (1 * MB)), creator.createArgs((int) (1 * MB)), numberExecutions, 0);
 
 
         // Start run for every dataSize
@@ -57,8 +55,12 @@ public class OpenCLBenchmarkUtils {
 
             int dataLength = creator.getDataLength(dataSize);
 
+			totalStart = System.currentTimeMillis();
+
             double[] resultI = opencl.executor.Executor.benchmark(kernelJNI, creator.getLocal0(dataLength), creator.getLocal1(dataLength), creator.getLocal2(dataLength),
                     creator.getGlobal0(dataLength), creator.getGlobal1(dataLength), creator.getGlobal2(dataLength), creator.createArgs(dataLength), numberExecutions, 0);
+
+			total[i] = (System.currentTimeMillis() - totalStart) / numberExecutions;
 
             for (int j = 0; j < numberExecutions; j++)
                 result[i] += resultI[j];
@@ -69,7 +71,7 @@ public class OpenCLBenchmarkUtils {
         // Absolute time Measurement
         long dt = System.currentTimeMillis() - t0;
 
-        BenchmarkResult r = new BenchmarkResult(numberExecutions, dataSizesBytes, result, kernelName, dt);
+        BenchmarkResult r = new BenchmarkResult(numberExecutions, dataSizesBytes, result, total, kernelName, dt);
 
         System.out.println(r);
     }
@@ -158,15 +160,17 @@ public class OpenCLBenchmarkUtils {
         private final int numberExecutions;
         private final long[] dataSizes;
         private final double[] average;
+		private final double[] totalAverage;
         private final String kernelName;
         private final long duration;
 
 
-        protected BenchmarkResult(int numberExecutions, long[] dataSizes, double[] average,
+        protected BenchmarkResult(int numberExecutions, long[] dataSizes, double[] average, double[] totalAverage,
                                   String kernelName, long duration) {
             this.numberExecutions = numberExecutions;
             this.dataSizes = dataSizes;
             this.average = average;
+			this.totalAverage = totalAverage;
             this.kernelName = kernelName;
             this.duration = duration;
         }
@@ -197,6 +201,15 @@ public class OpenCLBenchmarkUtils {
         public double[] getAverage() {
             return average;
         }
+		
+		/**
+         * Returns the average total KernelTimes for one kernel execution for every datasize.
+         *
+         * @return average KernelTimes for one kernel execution for every datasize
+         */
+        public double[] getTotalAverage() {
+            return totalAverage;
+        }
 
         /**
          * Returns the name of the tested kernel.
@@ -220,11 +233,14 @@ public class OpenCLBenchmarkUtils {
                 while (dataSize.length() < 10)
                     dataSize = " " + dataSize;
 
-                String result = "execution-time: " + average[i];
+                String result = "execution-time: " + average[i] + " ms";
+				String result2 = "total-time: " + totalAverage[i] + " ms";
 
                 buffer.append(dataSize);
                 buffer.append(": ");
                 buffer.append(result);
+                buffer.append("\n");
+				buffer.append(result2);
                 buffer.append("\n");
             }
 
