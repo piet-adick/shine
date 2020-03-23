@@ -32,7 +32,7 @@ public class OpenCLBenchmarkUtilsReduce {
                     : String.format("%.1f GiB", bytes / 0x1p30);
         }
 
-    public static void benchmark(String kernelName, String options, KernelArgCreator creator, int kernelNumber) throws IOException {
+    public static void benchmark(String kernelName, String options, KernelArgCreator creator) throws IOException {
         if (dataSizesBytes == null)
             throw new NullPointerException();
         if (dataSizesBytes.length == 0)
@@ -46,9 +46,7 @@ public class OpenCLBenchmarkUtilsReduce {
         long t0 = System.currentTimeMillis();
 
         // Create and compile the chosen Kernel
-        if (kernelNumber > 3 || kernelNumber < 0) throw new IllegalArgumentException("Invalid kernel number!");
-		Kernel kernelJNI = opencl.executor.Kernel.create(loadFile(kernelName+".cl"), kernelName + kernelNumber, options);
-		System.out.println("Using kernel " + kernelNumber + "...");
+		Kernel kernelJNI = opencl.executor.Kernel.create(loadFile(kernelName+".cl"), kernelName, options);
 
         // Array for result & total time
         double[] result = new double[dataSizesBytes.length];
@@ -95,9 +93,9 @@ public class OpenCLBenchmarkUtilsReduce {
 			total[i] = (System.currentTimeMillis() - totalStart) / numberExecutions;
             
 			// Prepare grid reduces (to reduce all the results of each block)
-			dataLength = creator.getGridSize(dataLength);
+			dataLength /= 2048;
 			
-			while (dataLength > 0) {
+			while (dataLength > 1) {
 				System.out.println("Repeating reduce for n = " + dataLength);
 				local0 = creator.getLocal0(dataLength);
 				global0 = creator.getGlobal0(dataLength);
@@ -110,7 +108,7 @@ public class OpenCLBenchmarkUtilsReduce {
 			
 				total2 = (System.currentTimeMillis() - totalStart) / numberExecutions;
 				
-				dataLength = (dataLength == 1) ? 0 : creator.getGridSize(dataLength);
+				dataLength /= 2048;
 				
 				// Add average times
 				total[i] += total2;
@@ -152,14 +150,6 @@ public class OpenCLBenchmarkUtilsReduce {
          * @return KernelArgs
          */
         public abstract KernelArg[] createArgs(int dataLength);
-
-		/**
-         * Returns the number of blocks for kernellaunch (in first dimension).
-         *
-         * @param dataLength length of the data (number of elements)
-         * @return number of grids for kernellaunch in first dimension
-         */
-		public abstract int getGridSize(int dataLength);
 
         /**
          * Returns the number of threads per block for kernellaunch in first dimension.
