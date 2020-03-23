@@ -3,7 +3,7 @@
 // input (global): 4194304 bytes
 // length (private): 4 bytes
 
-kernel void nvidiaDerived1(global double* output, const global double* restrict v120, int v_N_0){ 
+kernel void nvidiaDerived1(global float* output, const global float* restrict v120, int v_N_0){ 
 #ifndef WORKGROUP_GUARD
 #define WORKGROUP_GUARD
 #endif
@@ -13,7 +13,7 @@ WORKGROUP_GUARD
     /* iteration count is exactly 1, no loop emitted */
     {
       int v178 = get_local_id(0);
-      double v179;
+      float v179;
       v179 = 0.0;
       for (int v180 = 0;v180<2048;v180 = (1 + v180)){
         v179 = (fabs(v120[((262144 * v176) + (128 * v180) + v178)]) + v179);

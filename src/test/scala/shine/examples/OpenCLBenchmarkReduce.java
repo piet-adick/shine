@@ -23,18 +23,18 @@ public class OpenCLBenchmarkReduce {
         OpenCLBenchmarkUtilsReduce.KernelArgCreator creator = new OpenCLBenchmarkUtilsReduce.KernelArgCreator(){
             @Override
             public int getDataLength(long dataSizeBytes) {
-				return (int) (dataSizeBytes/8); //Double is 8 byte
+				return (int) (dataSizeBytes/4); //Float is 4 byte
             }
 
             @Override
             public KernelArg[] createArgs(int dataLength) {
 				int inputSize = (dataLength >= 2048) ? dataLength : 2048;
-				double[] in = new double[inputSize];
+				float[] in = new float[inputSize];
 				for (int i = 0; i < in.length; i++) {
 					in[i] = (i < dataLength) ? i : 0;
 				}
 				
-				GlobalArg outputArg = GlobalArg.createOutput(inputSize * 8 / 2048);
+				GlobalArg outputArg = GlobalArg.createOutput(inputSize * 4 / 2048);
 				GlobalArg inputArg = GlobalArg.createInput(in);
 				ValueArg nArg = ValueArg.create(inputSize);
 
