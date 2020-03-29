@@ -118,7 +118,7 @@ public class MatrixUtils {
 			}
 
 			// Warm up
-			Executor.benchmark(kernel, options, BenchmarkConfig.numberExecutionsWarmUp, this, 256 * MB);
+			Executor.benchmark(kernel, options, BenchmarkConfig.numberExecutionsWarmUp, this, BenchmarkConfig.warmUpSize);
 
 			BenchmarkResult result = Executor.benchmark(kernel, options, BenchmarkConfig.numberExecutions, this, dataSizes);
 

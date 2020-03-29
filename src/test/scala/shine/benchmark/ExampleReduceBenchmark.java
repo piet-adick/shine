@@ -87,7 +87,7 @@ public class ExampleReduceBenchmark {
 		Options options = Options.createOptions();
 
 		// Warm up
-		Executor.benchmark("device_reduce", options, BenchmarkConfig.numberExecutionsWarmUp, creator1, 256 * MB);
+		Executor.benchmark("device_reduce", options, BenchmarkConfig.numberExecutionsWarmUp, creator1, BenchmarkConfig.warmUpSize);
 
 		// Benchmark Reduce-Kernel
 		Executor.BenchmarkResult result = Executor.benchmark("device_reduce", options, BenchmarkConfig.numberExecutions, creator1, dataSizes);

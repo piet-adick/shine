@@ -38,8 +38,6 @@ public class OpenCLBenchmarkUtils {
 
         // Array for result & total time
         double[] result = new double[dataSizesBytes.length];
-		double[] total = new double[dataSizesBytes.length];
-		long totalStart;
 
 		System.out.println("Warming up...");
 		System.out.println("(Local = " + creator.getLocal0((int) (16 * MB)) + ", " + 
@@ -50,15 +48,15 @@ public class OpenCLBenchmarkUtils {
 										 creator.getGlobal2((int) (16 * MB)) + ")");
 
         //Warm up
-        KernelArg[] args = creator.createArgs((int) (256 * MB));
-        System.out.println("Start1...");
+        int dataLength = creator.getDataLength(BenchmarkConfig.warmUpSize);
+        KernelArg[] args = creator.createArgs(dataLength);
 
-          opencl.executor.Executor.benchmark(kernelJNI, creator.getLocal0((int) (256 * MB)), creator.getLocal1((int) (256 * MB)), creator.getLocal2((int) (256 * MB)),
-          creator.getGlobal0((int) (256 * MB)), creator.getGlobal1((int) (256 * MB)), creator.getGlobal2((int) (256 * MB)), args, BenchmarkConfig.numberExecutionsWarmUp, 0);
+        opencl.executor.Executor.benchmark(kernelJNI, creator.getLocal0(dataLength), creator.getLocal1(dataLength), creator.getLocal2(dataLength),
+          creator.getGlobal0(dataLength), creator.getGlobal1(dataLength), creator.getGlobal2(dataLength), args, BenchmarkConfig.numberExecutionsWarmUp, 0);
 
-        System.out.println("Start...");
         for (KernelArg arg : args)
             arg.dispose();
+
 
         // Start run for every dataSize
         for (int i = 0; i < dataSizesBytes.length; i++) {
@@ -67,7 +65,7 @@ public class OpenCLBenchmarkUtils {
             if (dataSize <= 0)
                 throw new IllegalArgumentException();
 
-            int dataLength = creator.getDataLength(dataSize);
+            dataLength = creator.getDataLength(dataSize);
 			
 			System.out.println("Benchmarking with " + humanReadableByteCountBin(dataSize) + "...");
 
@@ -79,12 +77,8 @@ public class OpenCLBenchmarkUtils {
 			int global2 = creator.getGlobal2(dataLength);
 			args = creator.createArgs(dataLength);
 
-			totalStart = System.currentTimeMillis();
-
             double[] resultI = opencl.executor.Executor.benchmark(kernelJNI, local0, local1, local2, global0, global1, global2, 
 																  args, numberExecutions, 0);
-
-			total[i] = (System.currentTimeMillis() - totalStart) / numberExecutions;
 
 			for (KernelArg arg : args)
 			    arg.dispose();
@@ -98,86 +92,9 @@ public class OpenCLBenchmarkUtils {
         // Absolute time Measurement
         long dt = System.currentTimeMillis() - t0;
 
-        BenchmarkResult r = new BenchmarkResult(numberExecutions, dataSizesBytes, result, total, kernelName, dt);
+        BenchmarkResult r = new BenchmarkResult(numberExecutions, dataSizesBytes, result, kernelName, dt);
 
         System.out.println(r);
-    }
-
-    /**
-     * Abstract class for generate KernelArgs with a specific size.
-     */
-    public static abstract class KernelArgCreator {
-        /**
-         * Returns the length of the data (number of elements).
-         *
-         * @param dataSizeBytes size of data in bytes
-         * @return length of the data
-         */
-        public abstract int getDataLength(long dataSizeBytes);
-
-        /**
-         * Generate KernelArgs.
-         *
-         * @param dataLength length of the data (number of elements)
-         * @return KernelArgs
-         */
-        public abstract KernelArg[] createArgs(int dataLength);
-
-        /**
-         * Returns the number of grids for kernellaunch in first dimension.
-         *
-         * @param dataLength length of the data (number of elements)
-         * @return number of grids for kernellaunch in first dimension
-         */
-        public abstract int getLocal0(int dataLength);
-
-        /**
-         * Returns the number of grids for kernellaunch in second dimension.
-         *
-         * @param dataLength length of the data (number of elements)
-         * @return number of grids for kernellaunch in second dimension
-         */
-        public int getLocal1(int dataLength) {
-            return 1;
-        }
-
-        /**
-         * Returns the number of grids for kernellaunch in third dimension.
-         *
-         * @param dataLength length of the data (number of elements)
-         * @return number of grids for kernellaunch in third dimension
-         */
-        public int getLocal2(int dataLength) {
-            return 1;
-        }
-
-        /**
-         * Returns the number of blocks for kernellaunch in first dimension.
-         *
-         * @param dataLength length of the data (number of elements)
-         * @return number of blocks for kernellaunch in first dimension
-         */
-        public abstract int getGlobal0(int dataLength);
-
-        /**
-         * Returns the number of blocks for kernellaunch in second dimension.
-         *
-         * @param dataLength length of the data (number of elements)
-         * @return number of blocks for kernellaunch in second dimension
-         */
-        public int getGlobal1(int dataLength) {
-            return 1;
-        }
-
-        /**
-         * Returns the number of blocks for kernellaunch in third dimension.
-         *
-         * @param dataLength length of the data (number of elements)
-         * @return number of blocks for kernellaunch in third dimension
-         */
-        public int getGlobal2(int dataLength) {
-            return 1;
-        }
     }
 
     /**
@@ -187,17 +104,15 @@ public class OpenCLBenchmarkUtils {
         private final int numberExecutions;
         private final long[] dataSizes;
         private final double[] average;
-		private final double[] totalAverage;
         private final String kernelName;
         private final long duration;
 
 
-        protected BenchmarkResult(int numberExecutions, long[] dataSizes, double[] average, double[] totalAverage,
+        protected BenchmarkResult(int numberExecutions, long[] dataSizes, double[] average,
                                   String kernelName, long duration) {
             this.numberExecutions = numberExecutions;
             this.dataSizes = dataSizes;
             this.average = average;
-			this.totalAverage = totalAverage;
             this.kernelName = kernelName;
             this.duration = duration;
         }
@@ -228,15 +143,6 @@ public class OpenCLBenchmarkUtils {
         public double[] getAverage() {
             return average;
         }
-		
-		/**
-         * Returns the average total KernelTimes for one kernel execution for every datasize.
-         *
-         * @return average KernelTimes for one kernel execution for every datasize
-         */
-        public double[] getTotalAverage() {
-            return totalAverage;
-        }
 
         /**
          * Returns the name of the tested kernel.
@@ -261,13 +167,10 @@ public class OpenCLBenchmarkUtils {
                     dataSize = " " + dataSize;
 
                 String result = "execution-time: " + average[i] + " ms";
-				String result2 = "total-time: " + totalAverage[i] + " ms";
 
                 buffer.append(dataSize);
                 buffer.append(": ");
                 buffer.append(result);
-                buffer.append("\n");
-				buffer.append(result2);
                 buffer.append("\n");
             }
 

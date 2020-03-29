@@ -6,6 +6,7 @@ public class BenchmarkConfig {
 
 
     public static int numberExecutionsWarmUp;
+    public static long warmUpSize;
     public static int numberExecutions;
 
     public static long[] dataSizesGEMM;
@@ -18,6 +19,7 @@ public class BenchmarkConfig {
             numberExecutions = 1;
             dataSizesGEMM = new long[]{1 * KB, 4 * MB};
             dataSizesReduce = new long[]{1 * KB, 4 * MB};
+            warmUpSize = 2 * KB;
         }
         //For final benchmark
         else {
@@ -27,6 +29,7 @@ public class BenchmarkConfig {
                     16 * MB, 64 * MB, 256 * MB, 1024 * MB };
             dataSizesReduce = new long[] { 1 * KB, 4 * KB, 16 * KB, 64 * KB, 256 * KB, 1 * MB, 4 * MB,
                     16 * MB, 64 * MB, 256 * MB, 1024 * MB };
+            warmUpSize = 256 * MB;
         }
     }
 }

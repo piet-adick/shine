@@ -267,9 +267,9 @@ echo "" &&
 echo "Rebuild..." &&
 echo "" &&
 
-buildYacx "$yacxGEMM" &&
-buildYacx "$yacxGEMMPinnend" &&
-buildYacx "$yacxGEMMPinnendStream" &&
+#buildYacx "$yacxGEMM" &&
+#buildYacx "$yacxGEMMPinnend" &&
+#buildYacx "$yacxGEMMPinnendStream" &&
 
 buildExecutor "$executorDefault" &&
 buildExecutor "$executorKernelTime" &&
@@ -300,16 +300,16 @@ echo "" &&
 #OpenCl Examples
 #Assertionfail (Falsche global size oder localSize?)
 #executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkCLBlastKeplerSGemm" &&
-#executeCL "$executorBranch" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkCLBlastKeplerSGemm" &&
+#executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkCLBlastKeplerSGemmTotal" &&
 
 #executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerBestSGemm" &&
-#executeCL "$executorBranch" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerBestSGemm" &&
+#executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerBestSGemmTotal" &&
 
 #executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerSGemm" &&
-#executeCL "$executorBranch" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerSGemm" &&
+executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerSGemmTotal" &&
 
-executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkReduce" &&
-#executeCL "$executorBranch" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkReduce" &&
+#executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkReduce" &&
+#executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkReduceTotal" &&
 
 
 #Shine Examples

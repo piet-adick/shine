@@ -38,9 +38,6 @@ public class OpenCLBenchmarkUtilsReduce {
 
         // Array for result & total time
         double[] result = new double[dataSizesBytes.length];
-		double[] total = new double[dataSizesBytes.length];
-		long totalStart;
-		double total2;
 
 		System.out.println("Warming up...");
 		System.out.println("(Local = " + creator.getLocal0((int) (16 * MB)) + ", " + 
@@ -51,8 +48,14 @@ public class OpenCLBenchmarkUtilsReduce {
 										 creator.getGlobal2((int) (16 * MB)) + ")");
 
         //Warm up
-          opencl.executor.Executor.benchmark(kernelJNI, creator.getLocal0((int) (16 * MB)), creator.getLocal1((int) (16 * MB)), creator.getLocal2((int) (16 * MB)),
-          creator.getGlobal0((int) (16 * MB)), creator.getGlobal1((int) (16 * MB)), creator.getGlobal2((int) (16 * MB)), creator.createArgs((int) (16 * MB)), BenchmarkConfig.numberExecutionsWarmUp, 0);
+        int dataLength = creator.getDataLength(BenchmarkConfig.warmUpSize);
+        KernelArg[] args = creator.createArgs(dataLength);
+
+        opencl.executor.Executor.benchmark(kernelJNI, creator.getLocal0(dataLength), creator.getLocal1(dataLength), creator.getLocal2(dataLength),
+                creator.getGlobal0(dataLength), creator.getGlobal1(dataLength), creator.getGlobal2(dataLength), args, BenchmarkConfig.numberExecutionsWarmUp, 0);
+
+        for (KernelArg arg : args)
+            arg.dispose();
 
         // Start run for every dataSize
         for (int i = 0; i < dataSizesBytes.length; i++) {
@@ -61,7 +64,7 @@ public class OpenCLBenchmarkUtilsReduce {
             if (dataSize <= 0)
                 throw new IllegalArgumentException();
 
-            int dataLength = creator.getDataLength(dataSize);
+            dataLength = creator.getDataLength(dataSize);
 			
 			System.out.println("Benchmarking with " + humanReadableByteCountBin(dataSize) + "...");
 
@@ -71,14 +74,10 @@ public class OpenCLBenchmarkUtilsReduce {
 			int global0 = creator.getGlobal0(dataLength);
 			int global1 = creator.getGlobal1(dataLength);
 			int global2 = creator.getGlobal2(dataLength);
-			KernelArg[] args = creator.createArgs(dataLength);
-
-			totalStart = System.currentTimeMillis();
+			args = creator.createArgs(dataLength);
 
             double[] resultI = opencl.executor.Executor.benchmark(kernelJNI, local0, local1, local2, global0, global1, global2, 
 																  args, numberExecutions, 0);
-
-			total[i] = (System.currentTimeMillis() - totalStart) / numberExecutions;
             
 			// Prepare grid reduces (to reduce all the results of each block)
 			dataLength /= 2048;
@@ -88,18 +87,13 @@ public class OpenCLBenchmarkUtilsReduce {
 				local0 = creator.getLocal0(dataLength);
 				global0 = creator.getGlobal0(dataLength);
 				args = creator.createArgs(dataLength);
-				
-				totalStart = System.currentTimeMillis();
-				
+
 				// Simulate grid reduce
 				double[] resultI2 = opencl.executor.Executor.benchmark(kernelJNI, local0, 1, 1, global0, 1, 1, args, numberExecutions, 0);
-			
-				total2 = (System.currentTimeMillis() - totalStart) / numberExecutions;
 				
 				dataLength /= 2048;
 				
 				// Add average times
-				total[i] += total2;
 				for (int j = 0; j < numberExecutions; j++) {
 					resultI[j] += resultI2[j];
 				}
@@ -108,13 +102,16 @@ public class OpenCLBenchmarkUtilsReduce {
             for (int j = 0; j < numberExecutions; j++)
                 result[i] += resultI[j];
 
+            for (KernelArg arg : args)
+                arg.dispose();
+
             result[i] /= (double) numberExecutions;
         }
 
         // Absolute time Measurement
         long dt = System.currentTimeMillis() - t0;
 
-        BenchmarkResult r = new BenchmarkResult(numberExecutions, dataSizesBytes, result, total, kernelName, dt);
+        BenchmarkResult r = new BenchmarkResult(numberExecutions, dataSizesBytes, result, kernelName, dt);
 
         System.out.println(r);
     }
@@ -203,17 +200,15 @@ public class OpenCLBenchmarkUtilsReduce {
         private final int numberExecutions;
         private final long[] dataSizes;
         private final double[] average;
-		private final double[] totalAverage;
         private final String kernelName;
         private final long duration;
 
 
-        protected BenchmarkResult(int numberExecutions, long[] dataSizes, double[] average, double[] totalAverage,
+        protected BenchmarkResult(int numberExecutions, long[] dataSizes, double[] average,
                                   String kernelName, long duration) {
             this.numberExecutions = numberExecutions;
             this.dataSizes = dataSizes;
             this.average = average;
-			this.totalAverage = totalAverage;
             this.kernelName = kernelName;
             this.duration = duration;
         }
@@ -244,15 +239,6 @@ public class OpenCLBenchmarkUtilsReduce {
         public double[] getAverage() {
             return average;
         }
-		
-		/**
-         * Returns the average total KernelTimes for one kernel execution for every datasize.
-         *
-         * @return average KernelTimes for one kernel execution for every datasize
-         */
-        public double[] getTotalAverage() {
-            return totalAverage;
-        }
 
         /**
          * Returns the name of the tested kernel.
@@ -277,13 +263,10 @@ public class OpenCLBenchmarkUtilsReduce {
                     dataSize = " " + dataSize;
 
                 String result = "execution-time: " + average[i] + " ms";
-				String result2 = "total-time: " + totalAverage[i] + " ms";
 
                 buffer.append(dataSize);
                 buffer.append(": ");
                 buffer.append(result);
-                buffer.append("\n            ");
-				buffer.append(result2);
                 buffer.append("\n");
             }
 
