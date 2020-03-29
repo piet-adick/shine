@@ -5,7 +5,7 @@ import opencl.executor.ValueArg;
 
 import java.io.IOException;
 
-public class OpenCLBenchmark {
+public class OpenCLBenchmarkDotProduct {
 
     public static void main(String[] args) throws IOException {
         //Load Libary

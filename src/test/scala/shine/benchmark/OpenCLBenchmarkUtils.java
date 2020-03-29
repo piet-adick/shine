@@ -6,24 +6,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
-public class OpenCLBenchmarkUtilsReduce {
+public class OpenCLBenchmarkUtils {
     final static long KB = 1024;
     final static long MB = 1024 * 1024;
 
-    final static int numberExecutions = 30;
-
-    final static long[] dataSizesBytes = new long[]{
-			1 * KB,
-			4 * KB,
-			16 * KB,
-			64 * KB,
-			256 * KB,
-			1 * MB,
-			4 * MB,
-            16 * MB,
-			64 * MB,
-			256 * MB,
-			1024 * MB};
+    final static int numberExecutions = BenchmarkConfig.numberExecutions;
+    final static long[] dataSizesBytes = BenchmarkConfig.dataSizesGEMM;
 			
 	public static String humanReadableByteCountBin(long bytes) {
             return bytes < 1024L ? bytes + " B"
@@ -45,14 +33,13 @@ public class OpenCLBenchmarkUtilsReduce {
         // Absolute time Measurement
         long t0 = System.currentTimeMillis();
 
-        // Create and compile the chosen Kernel
-		Kernel kernelJNI = opencl.executor.Kernel.create(loadFile(kernelName+".cl"), kernelName, options);
+        // Create and compile Kernel
+        Kernel kernelJNI = opencl.executor.Kernel.create(loadFile("kernels/" + kernelName+".cl"), kernelName, options);
 
         // Array for result & total time
         double[] result = new double[dataSizesBytes.length];
 		double[] total = new double[dataSizesBytes.length];
 		long totalStart;
-		double total2;
 
 		System.out.println("Warming up...");
 		System.out.println("(Local = " + creator.getLocal0((int) (16 * MB)) + ", " + 
@@ -63,8 +50,15 @@ public class OpenCLBenchmarkUtilsReduce {
 										 creator.getGlobal2((int) (16 * MB)) + ")");
 
         //Warm up
-          opencl.executor.Executor.benchmark(kernelJNI, creator.getLocal0((int) (16 * MB)), creator.getLocal1((int) (16 * MB)), creator.getLocal2((int) (16 * MB)),
-          creator.getGlobal0((int) (16 * MB)), creator.getGlobal1((int) (16 * MB)), creator.getGlobal2((int) (16 * MB)), creator.createArgs((int) (16 * MB)), 10, 0);
+        KernelArg[] args = creator.createArgs((int) (256 * MB));
+        System.out.println("Start1...");
+
+          opencl.executor.Executor.benchmark(kernelJNI, creator.getLocal0((int) (256 * MB)), creator.getLocal1((int) (256 * MB)), creator.getLocal2((int) (256 * MB)),
+          creator.getGlobal0((int) (256 * MB)), creator.getGlobal1((int) (256 * MB)), creator.getGlobal2((int) (256 * MB)), args, BenchmarkConfig.numberExecutionsWarmUp, 0);
+
+        System.out.println("Start...");
+        for (KernelArg arg : args)
+            arg.dispose();
 
         // Start run for every dataSize
         for (int i = 0; i < dataSizesBytes.length; i++) {
@@ -83,7 +77,7 @@ public class OpenCLBenchmarkUtilsReduce {
 			int global0 = creator.getGlobal0(dataLength);
 			int global1 = creator.getGlobal1(dataLength);
 			int global2 = creator.getGlobal2(dataLength);
-			KernelArg[] args = creator.createArgs(dataLength);
+			args = creator.createArgs(dataLength);
 
 			totalStart = System.currentTimeMillis();
 
@@ -91,31 +85,9 @@ public class OpenCLBenchmarkUtilsReduce {
 																  args, numberExecutions, 0);
 
 			total[i] = (System.currentTimeMillis() - totalStart) / numberExecutions;
-            
-			// Prepare grid reduces (to reduce all the results of each block)
-			dataLength /= 2048;
-			
-			while (dataLength > 1) {
-				System.out.println("Repeating reduce for n = " + dataLength);
-				local0 = creator.getLocal0(dataLength);
-				global0 = creator.getGlobal0(dataLength);
-				args = creator.createArgs(dataLength);
-				
-				totalStart = System.currentTimeMillis();
-				
-				// Simulate grid reduce
-				double[] resultI2 = opencl.executor.Executor.benchmark(kernelJNI, local0, 1, 1, global0, 1, 1, args, numberExecutions, 0);
-			
-				total2 = (System.currentTimeMillis() - totalStart) / numberExecutions;
-				
-				dataLength /= 2048;
-				
-				// Add average times
-				total[i] += total2;
-				for (int j = 0; j < numberExecutions; j++) {
-					resultI[j] += resultI2[j];
-				}
-			}
+
+			for (KernelArg arg : args)
+			    arg.dispose();
 
             for (int j = 0; j < numberExecutions; j++)
                 result[i] += resultI[j];
@@ -152,7 +124,7 @@ public class OpenCLBenchmarkUtilsReduce {
         public abstract KernelArg[] createArgs(int dataLength);
 
         /**
-         * Returns the number of threads per block for kernellaunch in first dimension.
+         * Returns the number of grids for kernellaunch in first dimension.
          *
          * @param dataLength length of the data (number of elements)
          * @return number of grids for kernellaunch in first dimension
@@ -160,7 +132,7 @@ public class OpenCLBenchmarkUtilsReduce {
         public abstract int getLocal0(int dataLength);
 
         /**
-         * Returns the number of threads per block for kernellaunch in second dimension.
+         * Returns the number of grids for kernellaunch in second dimension.
          *
          * @param dataLength length of the data (number of elements)
          * @return number of grids for kernellaunch in second dimension
@@ -170,7 +142,7 @@ public class OpenCLBenchmarkUtilsReduce {
         }
 
         /**
-         * Returns the number of threads per block for kernellaunch in third dimension.
+         * Returns the number of grids for kernellaunch in third dimension.
          *
          * @param dataLength length of the data (number of elements)
          * @return number of grids for kernellaunch in third dimension
@@ -180,7 +152,7 @@ public class OpenCLBenchmarkUtilsReduce {
         }
 
         /**
-         * Returns the total number of threads for kernellaunch in first dimension.
+         * Returns the number of blocks for kernellaunch in first dimension.
          *
          * @param dataLength length of the data (number of elements)
          * @return number of blocks for kernellaunch in first dimension
@@ -188,7 +160,7 @@ public class OpenCLBenchmarkUtilsReduce {
         public abstract int getGlobal0(int dataLength);
 
         /**
-         * Returns the total number of threads for kernellaunch in second dimension.
+         * Returns the number of blocks for kernellaunch in second dimension.
          *
          * @param dataLength length of the data (number of elements)
          * @return number of blocks for kernellaunch in second dimension
@@ -198,7 +170,7 @@ public class OpenCLBenchmarkUtilsReduce {
         }
 
         /**
-         * Returns the total number of threads for kernellaunch in third dimension.
+         * Returns the number of blocks for kernellaunch in third dimension.
          *
          * @param dataLength length of the data (number of elements)
          * @return number of blocks for kernellaunch in third dimension
@@ -294,7 +266,7 @@ public class OpenCLBenchmarkUtilsReduce {
                 buffer.append(dataSize);
                 buffer.append(": ");
                 buffer.append(result);
-                buffer.append("\n            ");
+                buffer.append("\n");
 				buffer.append(result2);
                 buffer.append("\n");
             }

@@ -1,46 +1,332 @@
-CURRENTDIR='/scratch/tmp/l_sief03/yacx'
 CUDA='/Applic.HPC/Easybuild/skylake/2019a/software/CUDA/10.1.105-GCC-8.2.0-2.31.1/targets/x86_64-linux'
-GCCINCLUDE='/Applic.HPC/Easybuild/skylake/2019a/software/Core/GCCcore/8.2.0/include/c\+\+/8.2.0'
-GCCINCLUDE2='/Applic.HPC/Easybuild/skylake/2019a/software/Core/GCCcore/8.2.0/include/c\+\+/8.2.0/x86_64-pc-linux-gnu'
 
 CUDAFP16="$CUDA/include/cuda_fp16.h"
 INCLUDECUDA="--include-path=$CUDA/include"
-INCLUDEGCC="--include-path=$GCCINCLUDE"
-INCLUDEGCC2="--include-path=$GCCINCLUDE2"
-INCLUDECURRENT="--include-path=$CURRENTDIR"
 
-HALFCPP='lib/yacx/src/jni/Half.cpp'  
-EXAMPLESJAVA='src/test/scala/shine/examples'
+HALFCPP='src/jni/Half.cpp'  
+
+YACX_BUILD_DIR="build"
+YACX_JAVA_BIN="${YACX_BUILD_DIR}/java/bin"
 
 MODULES='Java GCC/8.2.0-2.31.1 CUDA/10.1.105 CMake'
 MODULESADD="module add $MODULES"
 
+pushd () {
+    command pushd "$@" > /dev/null
+}
+
+popd () {
+    command popd "$@" > /dev/null
+}
+
+buildYacx() {
+    yacxDir="$1"
+    
+    echo "Building Yacx in $yacxDir" &&
+    pushd "$yacxDir" &&
+    
+    #Change <cuda_fp16.h> to "cuda_fp16.h"
+    sed -in "s+<cuda_fp16.h>+\\\\\"$CUDAFP16\\\\\"+g" $HALFCPP &&
+    
+    #Build
+    if [ -d $YACX_JAVA_BIN ]; then
+        rm $YACX_JAVA_BIN/*.java
+    fi &&
+    
+    mkdir -p $YACX_JAVA_BIN &&
+    cp -R examples/kernels $YACX_JAVA_BIN &&
+    cp examples/java/*.java $YACX_JAVA_BIN &&
+
+    cmake -H. -B$YACX_BUILD_DIR &&
+    make -C $YACX_BUILD_DIR yacx-jni &&
+
+    pushd $YACX_JAVA_BIN &&
+    javac *.java -d $PWD -sourcepath $PWD &&
+    popd &&
+    echo 'Build finished.' &&
+    
+    popd && 
+    
+    echo "" && echo ""
+}
+
+buildExecutor() {
+    executorPath="$1"
+    
+    echo "Building Yacx in $executorPath" &&
+    pushd "$executorPath" &&
+
+    #Build
+    ./buildExecutor.sh &&
+
+    #Copy executorSrc to build
+    cp -r src/main/java/opencl lib/Executor/build/ &&
+
+    popd &&
+    
+    echo "" && echo ""
+}
+
+buildShine() {
+    shinePath="$1"
+    
+    echo "Building Yacx in $shinePath" &&
+    pushd "$shinePath" &&
+    
+    #Install sbt (no module available)
+    if [ ! -d "../sbt" ]; then
+        pushd ..  &&
+        wget https://piccolo.link/sbt-1.3.4.zip -O sbt.zip &&
+        unzip -qq sbt.zip &&
+        popd
+    fi &&
+    
+    #Build
+    ./setup.sh &&
+    ../sbt/bin/sbt compile &&
+    
+    popd &&
+    
+    echo "" && echo ""
+}
+
+executeYacx() {
+    yacxDir="$1"
+    yacxExample="$2"
+    
+    [ ! -d "$yacxDir" ] && echo "Directory $yacxDir not found!" && exit 1
+    [ ! -f "$yacxExample.java" ] && echo "File $yacxExample.java not found!" && exit 1
+    
+    yacxExampleName=$(basename "$yacxExample") &&
+    yacxExampleDir=$(dirname "$yacxExample") &&
+    
+    cp $yacxExampleDir/*.java "$yacxDir/$YACX_JAVA_BIN/" &&
+    cp $yacxExampleDir/kernels/*.cu "$yacxDir/$YACX_JAVA_BIN/kernels/" &&
+    cp $yacxExampleDir/kernels/*.h "$yacxDir/$YACX_JAVA_BIN/kernels/" &&
+    
+    pushd "$yacxDir" &&
+    
+    #Insert Options for search in right directories for required headers
+    sed -in "s+--gpu-architecture=compute_70\");+--gpu-architecture=compute_70\");options.insert(\"$INCLUDECUDA\");+g" $YACX_JAVA_BIN/*.java &&
+    
+    echo "--------------------------------------------------------------------------------------------------------------------" &&
+    echo "Execute Example with yacx: $yacxExampleName in $(basename $yacxDir)" &&
+    echo "" &&
+    
+    #Execute GEMM
+    pushd $YACX_JAVA_BIN &&
+    javac $yacxExampleName.java &&
+    java -ea -Djava.library.path=../../ $yacxExampleName &&
+    popd &&
+    
+    echo "--------------------------------------------------------------------------------------------------------------------" &&
+    
+    popd
+}
+
+executeCL() {
+    executorDir="$1"
+    executorExample="$2"
+    
+    [ ! -d "$executorDir" ] && echo "Directory $executorDir not found!" && exit 1
+    [ ! -f "$executorExample.java" ] && echo "File $executorExample.java not found!" && exit 1
+    
+    executorExampleName=$(basename "$executorExample") &&
+    executorExampleDir=$(dirname "$executorExample") &&
+    
+    if [ "$(ls $executorDir/lib/Executor/build | grep '.java')" != "" ]; then
+        rm $executorDir/lib/Executor/build/*.java
+    fi &&
+    cp $executorExampleDir/*.java "$executorDir/lib/Executor/build/" &&
+    mkdir -p $executorDir/lib/Executor/build/kernels &&
+    cp $executorExampleDir/kernels/*.cl "$executorDir/lib/Executor/build/kernels/" &&
+    cp $executorExampleDir/kernels/*.h "$executorDir/lib/Executor/build/kernels/" &&
+    
+    pushd "$executorDir" &&
+    pushd "lib/Executor/build" &&
+    
+    javac "$executorExampleName.java" &&
+    
+    echo "" &&
+    echo "--------------------------------------------------------------------------------------------------------------------" &&
+    echo "Execute Example with OpenCLExecutor: $executorExampleName in $(basename $executorDir)" &&
+    echo "" &&
+
+    java -Xmx10G -ea -Djava.library.path=. "$executorExampleName" &&
+    
+    echo "" &&
+    echo "--------------------------------------------------------------------------------------------------------------------" &&
+    echo "" &&
+    
+    popd &&
+    popd
+}
+
+executeShineExample() {
+    shineDir="$1"
+    shineExample="$2"
+    
+    [ ! -d "$shineDir" ] && echo "Directory $shineDir not found!" && exit 1
+    [ ! -f "$shineExample" ] && echo "File $shineExample.scala not found!" && exit 1
+    [ ! -d "../sbt" ] && echo "sbt not found!" && exit 1
+    
+    shineExampleName=$(basename "$shineExample") &&
+    shineExamplePackage=$(cat "$shineExample.scala" | grep "package" | head -n 1 | awk '{print $2;}') &&
+    
+    pushd "$shineDir" &&
+    
+    echo "" &&
+    echo "--------------------------------------------------------------------------------------------------------------------" &&
+    echo "Execute Example with Shine: $shineExamplePackage.$shineExample in $shineDir" &&
+    echo "" &&
+    
+    ../sbt/bin/sbt "testOnly $shineExamplePackage.$shineExample" &&
+    
+    echo "" &&
+    echo "--------------------------------------------------------------------------------------------------------------------" &&
+    echo "" &&
+    
+    popd
+}
+
+
+
 #Load modules
 $MODULESADD
 
-#Change <cuda_fp16.h> to "cuda_fp16.h"
-sed -in "s+<cuda_fp16.h>+\\\\\"$CUDAFP16\\\\\"+g" $HALFCPP
 
-#Insert Options for search in right directories for required headers
-sed -in "s+--gpu-architecture=compute_70\");+--gpu-architecture=compute_70\");options.insert(\"$INCLUDECUDA\");+g" $EXAMPLESJAVA/*.scala
 
-#Install sbt (no module available)
-if [ ! -d "../sbt" ]; then
 pushd ..
-wget https://piccolo.link/sbt-1.3.4.zip -O sbt.zip
-unzip sbt.zip
+
+
+
+#Test branches/directories
+yacxGEMM="yacxGEMM"
+yacxGEMMPinnend="yacxGEMMPinnend"
+yacxGEMMPinnendStream="yacxGEMMPinnendStream"
+executorDefault="shine/lib/executor"
+executorKernelTime="executorKernelTime"
+shine="shine"
+
+
+{
+echo "Refresh branches..." &&
+echo "" &&
+
+#Refresh
+if [ ! -d "$yacxGEMM" ]; then
+    git clone https://github.com/ZerataX/yacx.git "$yacxGEMM" &&
+    pushd "$yacxGEMM" &&
+    git checkout "FastKernelExample&Transposition" &&
+    popd
+else
+    pushd "$yacxGEMM" &&
+    git pull &&
+    popd
+fi &&
+echo "" && echo "" &&
+
+    
+if [ ! -d "$yacxGEMMPinnend" ]; then
+    git clone https://github.com/ZerataX/yacx.git "$yacxGEMMPinnend" &&
+    pushd "$yacxGEMMPinnend" &&
+    git checkout "FastKernelExample&TranspositionPinnend" &&
+    popd
+else
+    pushd "$yacxGEMMPinnend" &&
+    git pull &&
+    popd
+fi &&
+echo "" && echo "" &&
+    
+if [ ! -d "$yacxGEMMPinnendStream" ]; then
+    git clone https://github.com/ZerataX/yacx.git "$yacxGEMMPinnendStream" &&
+    pushd "$yacxGEMMPinnendStream" &&
+    git checkout "FastKernelExample&TranspositionPinnendStream" &&
+    popd
+else
+    pushd "$yacxGEMMPinnendStream" &&
+    git pull &&
+    popd
+fi &&
+echo "" && echo "" &&
+
+if [ ! -d "$executorKernelTime" ]; then
+    git clone https://github.com/LukasSiefke/executor "$executorKernelTime"
+else
+    pushd "$executorKernelTime" &&
+    git pull &&
+    popd
+fi &&
+echo "" && echo "" &&
+
+
+
+#Rebuild
+echo "" &&
+echo "Rebuild..." &&
+echo "" &&
+
+buildYacx "$yacxGEMM" &&
+buildYacx "$yacxGEMMPinnend" &&
+buildYacx "$yacxGEMMPinnendStream" &&
+
+buildExecutor "$executorDefault" &&
+buildExecutor "$executorKernelTime" &&
+
+#buildShine "$shine" &&
+
+
+
+#Run Examples
+echo "" &&
+echo "Run Examples..." &&
+echo "" &&
+
+#Yacx Examples
+#executeYacx "$yacxGEMM" "shine/src/test/scala/shine/benchmark/ExampleSimpleGEMMBenchmark" &&
+#executeYacx "$yacxGEMMPinnend" "shine/src/test/scala/shine/benchmark/ExampleSimpleGEMMBenchmark" &&
+#executeYacx "$yacxGEMMPinnendStream" "shine/src/test/scala/shine/benchmark/ExampleSimpleGEMMBenchmark" &&
+
+#executeYacx "$yacxGEMM" "shine/src/test/scala/shine/benchmark/ExampleFastGEMMBenchmark" &&
+#executeYacx "$yacxGEMMPinnend" "shine/src/test/scala/shine/benchmark/ExampleFastGEMMBenchmark" &&
+#executeYacx "$yacxGEMMPinnendStream" "shine/src/test/scala/shine/benchmark/ExampleFastGEMMBenchmark" &&
+
+#executeYacx "$yacxGEMM" "shine/src/test/scala/shine/benchmark/ExampleReduceBenchmark" &&
+#executeYacx "$yacxGEMMPinnend" "shine/src/test/scala/shine/benchmark/ExampleReduceBenchmark" &&
+#executeYacx "$yacxGEMMPinnendStream" "shine/src/test/scala/shine/benchmark/ExampleReduceBenchmark" &&
+
+
+#OpenCl Examples
+#Assertionfail (Falsche global size oder localSize?)
+#executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkCLBlastKeplerSGemm" &&
+#executeCL "$executorBranch" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkCLBlastKeplerSGemm" &&
+
+#executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerBestSGemm" &&
+#executeCL "$executorBranch" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerBestSGemm" &&
+
+#executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerSGemm" &&
+#executeCL "$executorBranch" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerSGemm" &&
+
+executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkReduce" &&
+#executeCL "$executorBranch" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkReduce" &&
+
+
+#Shine Examples
+#executeShine "$shine" "shine/src/test/scala/shine/examples/dotProduct" &&
+#executeShine "$shine" "shine/src/test/scala/shine/examples/matrixmultiplication" &&
+#executeShine "$shine" "shine/src/test/scala/shine/examples/gemm" &&
+
+
+echo "" &&
+echo "Sucessfully executed!" &&
+echo ""
+
+} || {
+    echo "" && echo ""
+    echo "Fatal Exception occured whine building/executing examples"
+}
+
+
 popd
-fi
 
-#Build
-#./setup.sh
-../sbt/bin/sbt compile
-
-#Run
-echo "DotproductBenchmark" > Benchmark.txt
-../sbt/bin/sbt "testOnly shine.examples.dotProduct" >> Benchmark.txt
-echo "" >> Benchmark.txt
-echo "GEMMBenchmark2" >> Benchmark.txt
-../sbt/bin/sbt "testOnly shine.examples.gemm" >> Benchmark.txt
-echo "" >> Benchmark.txt
-cat Benchmark.txt
