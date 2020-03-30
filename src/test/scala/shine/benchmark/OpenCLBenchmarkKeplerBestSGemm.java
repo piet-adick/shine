@@ -3,8 +3,6 @@ import opencl.executor.GlobalArg;
 import opencl.executor.KernelArg;
 import opencl.executor.ValueArg;
 
-import java.io.IOException;
-
 public class OpenCLBenchmarkKeplerBestSGemm {
 
     //Kernelname (kernelcode in file kernelname.cl)

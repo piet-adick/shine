@@ -206,51 +206,51 @@ echo "Refresh branches..." &&
 echo "" &&
 
 #Refresh
-# if [ ! -d "$yacxGEMM" ]; then
-#     git clone https://github.com/ZerataX/yacx.git "$yacxGEMM" &&
-#     pushd "$yacxGEMM" &&
-#     git checkout "FastKernelExample&Transposition" &&
-#     popd
-# else
-#     pushd "$yacxGEMM" &&
-#     git pull &&
-#     popd
-# fi &&
-# echo "" && echo "" &&
-# 
-#     
-# if [ ! -d "$yacxGEMMPinnend" ]; then
-#     git clone https://github.com/ZerataX/yacx.git "$yacxGEMMPinnend" &&
-#     pushd "$yacxGEMMPinnend" &&
-#     git checkout "FastKernelExample&TranspositionPinnend" &&
-#     popd
-# else
-#     pushd "$yacxGEMMPinnend" &&
-#     git pull &&
-#     popd
-# fi &&
-# echo "" && echo "" &&
-#     
-# if [ ! -d "$yacxGEMMPinnendStream" ]; then
-#     git clone https://github.com/ZerataX/yacx.git "$yacxGEMMPinnendStream" &&
-#     pushd "$yacxGEMMPinnendStream" &&
-#     git checkout "FastKernelExample&TranspositionPinnendStream" &&
-#     popd
-# else
-#     pushd "$yacxGEMMPinnendStream" &&
-#     git pull &&
-#     popd
-# fi &&
-# echo "" && echo "" &&
-# 
-# if [ ! -d "$executorKernelTime" ]; then
-#     git clone https://github.com/LukasSiefke/executor "$executorKernelTime"
-# else
-#     pushd "$executorKernelTime" &&
-#     git pull &&
-#     popd
-# fi &&
-# echo "" && echo "" &&
+if [ ! -d "$yacxGEMM" ]; then
+    git clone https://github.com/ZerataX/yacx.git "$yacxGEMM" &&
+    pushd "$yacxGEMM" &&
+    git checkout "FastKernelExample&Transposition" &&
+    popd
+else
+    pushd "$yacxGEMM" &&
+    git pull &&
+    popd
+fi &&
+echo "" && echo "" &&
+
+    
+if [ ! -d "$yacxGEMMPinnend" ]; then
+    git clone https://github.com/ZerataX/yacx.git "$yacxGEMMPinnend" &&
+    pushd "$yacxGEMMPinnend" &&
+    git checkout "FastKernelExample&TranspositionPinnend" &&
+    popd
+else
+    pushd "$yacxGEMMPinnend" &&
+    git pull &&
+    popd
+fi &&
+echo "" && echo "" &&
+    
+if [ ! -d "$yacxGEMMPinnendStream" ]; then
+    git clone https://github.com/ZerataX/yacx.git "$yacxGEMMPinnendStream" &&
+    pushd "$yacxGEMMPinnendStream" &&
+    git checkout "FastKernelExample&TranspositionPinnendStream" &&
+    popd
+else
+    pushd "$yacxGEMMPinnendStream" &&
+    git pull &&
+    popd
+fi &&
+echo "" && echo "" &&
+
+if [ ! -d "$executorKernelTime" ]; then
+    git clone https://github.com/LukasSiefke/executor "$executorKernelTime"
+else
+    pushd "$executorKernelTime" &&
+    git pull &&
+    popd
+fi &&
+echo "" && echo "" &&
 
 
 
@@ -259,9 +259,9 @@ echo "" &&
 echo "Rebuild..." &&
 echo "" &&
 
-#buildYacx "$yacxGEMM" &&
-#buildYacx "$yacxGEMMPinnend" &&
-#buildYacx "$yacxGEMMPinnendStream" &&
+buildYacx "$yacxGEMM" &&
+buildYacx "$yacxGEMMPinnend" &&
+buildYacx "$yacxGEMMPinnendStream" &&
 
 buildExecutor "$executorDefault" &&
 buildExecutor "$executorKernelTime" &&
@@ -290,15 +290,14 @@ echo "" &&
 
 
 #OpenCl Examples
-#Assertionfail (Falsche global size oder localSize?)
-#executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkCLBlastKeplerSGemmExe" &&
-#executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkCLBlastKeplerSGemmTotal" &&
+executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkCLBlastKeplerSGemmExe" &&
+executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkCLBlastKeplerSGemmTotal" &&
 
 executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerBestSGemmExe" &&
 executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerBestSGemmTotal" &&
 
-#executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerSGemmExe" &&
-#executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerSGemmTotal" &&
+executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerSGemmExe" &&
+executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerSGemmTotal" &&
 
 #executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkReduceExe" &&
 #executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkReduceTotal" &&

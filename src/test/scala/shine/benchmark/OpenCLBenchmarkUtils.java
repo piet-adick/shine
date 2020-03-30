@@ -20,7 +20,9 @@ public class OpenCLBenchmarkUtils {
         }
 
     public static void benchmark(String kernelName, String options, KernelArgCreator creator, long[] dataSizesBytes) throws IOException {
-        if (dataSizesBytes == null)
+        opencl.executor.Executor.loadAndInit();
+
+	    if (dataSizesBytes == null)
             throw new NullPointerException();
         if (dataSizesBytes.length == 0)
             throw new IllegalArgumentException("not data sizes specificated");
@@ -94,6 +96,8 @@ public class OpenCLBenchmarkUtils {
         BenchmarkResult r = new BenchmarkResult(numberExecutions, dataSizesBytes, result, kernelName, dt);
 
         System.out.println(r);
+
+        opencl.executor.Executor.shutdown();
     }
 
     /**

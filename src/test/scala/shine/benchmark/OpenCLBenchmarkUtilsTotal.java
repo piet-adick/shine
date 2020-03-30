@@ -10,6 +10,30 @@ import java.text.DecimalFormat;
 
 public class OpenCLBenchmarkUtilsTotal {
 
+    public static void run(String kernel, String options, KernelArgCreator creator, long[] dataSizes) throws IOException {
+        //Load Library
+        opencl.executor.Executor.loadAndInit();
+
+        //Warm up
+        OpenCLBenchmarkUtilsTotal.benchmark(kernel, options, BenchmarkConfig.numberExecutionsWarmUp, creator, BenchmarkConfig.warmUpSize);
+
+        OpenCLBenchmarkUtilsTotal.BenchmarkResult result = OpenCLBenchmarkUtilsTotal.benchmark(kernel, options, BenchmarkConfig.numberExecutions, creator, dataSizes);
+
+        String resultString = result.toString();
+        for (long dataSize : dataSizes) {
+            String empty = "";
+            if (creator.getDataLength(dataSize) < 100)
+                empty = "  ";
+            resultString = resultString.replaceFirst("B: execution-time:", "B (" + (int) Math.sqrt(creator.getDataLength(dataSize)) + "x"
+                    + (int) Math.sqrt(creator.getDataLength(dataSize)) + " matrices): execution-time:" + empty);
+        }
+
+        System.out.println(resultString);
+
+        //Shutdown Executor
+        opencl.executor.Executor.shutdown();
+    }
+
     public static BenchmarkResult benchmark(String kernelName, String buildOptions, int numberExecutions, KernelArgCreator creator, long... dataSizesBytes) throws IOException {
         if (dataSizesBytes == null)
             throw new NullPointerException();
