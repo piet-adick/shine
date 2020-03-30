@@ -45,7 +45,7 @@ public class MatrixUtils {
 	}
 
 	public static abstract class BenchmarkGEMM extends Executor.KernelArgCreator {
-		private final long[] dataSizes = BenchmarkConfig.dataSizesGEMM;
+		private final long[] dataSizes = BenchmarkConfig.dataSizesGEMMYacx;
 
 		@Override
 		public int getDataLength(long dataSizeBytes) {

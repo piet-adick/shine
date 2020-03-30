@@ -11,7 +11,6 @@ public class OpenCLBenchmarkUtils {
     final static long MB = 1024 * 1024;
 
     final static int numberExecutions = BenchmarkConfig.numberExecutions;
-    final static long[] dataSizesBytes = BenchmarkConfig.dataSizesGEMM;
 			
 	public static String humanReadableByteCountBin(long bytes) {
             return bytes < 1024L ? bytes + " B"
@@ -20,7 +19,7 @@ public class OpenCLBenchmarkUtils {
                     : String.format("%.1f GiB", bytes / 0x1p30);
         }
 
-    public static void benchmark(String kernelName, String options, KernelArgCreator creator) throws IOException {
+    public static void benchmark(String kernelName, String options, KernelArgCreator creator, long[] dataSizesBytes) throws IOException {
         if (dataSizesBytes == null)
             throw new NullPointerException();
         if (dataSizesBytes.length == 0)
@@ -39,17 +38,17 @@ public class OpenCLBenchmarkUtils {
         // Array for result & total time
         double[] result = new double[dataSizesBytes.length];
 
-		System.out.println("Warming up...");
-		System.out.println("(Local = " + creator.getLocal0((int) (16 * MB)) + ", " + 
-										 creator.getLocal1((int) (16 * MB)) + ", " + 
-										 creator.getLocal2((int) (16 * MB)) + ")");
-		System.out.println("(Global = " + creator.getGlobal0((int) (16 * MB)) + ", " + 
-										 creator.getGlobal1((int) (16 * MB)) + ", " + 
-										 creator.getGlobal2((int) (16 * MB)) + ")");
-
         //Warm up
         int dataLength = creator.getDataLength(BenchmarkConfig.warmUpSize);
         KernelArg[] args = creator.createArgs(dataLength);
+
+		System.out.println("Warming up...");
+		System.out.println("(Local = " + creator.getLocal0(dataLength) + ", " +
+										 creator.getLocal1(dataLength) + ", " +
+										 creator.getLocal2(dataLength) + ")");
+		System.out.println("(Global = " + creator.getGlobal0(dataLength) + ", " +
+										 creator.getGlobal1(dataLength) + ", " +
+										 creator.getGlobal2(dataLength) + ")");
 
         opencl.executor.Executor.benchmark(kernelJNI, creator.getLocal0(dataLength), creator.getLocal1(dataLength), creator.getLocal2(dataLength),
           creator.getGlobal0(dataLength), creator.getGlobal1(dataLength), creator.getGlobal2(dataLength), args, BenchmarkConfig.numberExecutionsWarmUp, 0);

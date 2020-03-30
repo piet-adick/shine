@@ -18,13 +18,11 @@ public class OpenCLBenchmarkUtilsTotal {
         if (numberExecutions <= 0)
             throw new IllegalArgumentException("illegal number of executions: " + numberExecutions);
 
-        String kernelString = loadFile(kernelName);
-
         // Absolute time Measurement
         long t0 = System.currentTimeMillis();
 
         // Create and compile Kernel
-        Kernel kernelJNI = opencl.executor.Kernel.create(loadFile("kernels/" + kernelName+".cu"), kernelName, buildOptions);
+        Kernel kernelJNI = opencl.executor.Kernel.create(loadFile("kernels/" + kernelName+".cl"), kernelName, buildOptions);
 
         // Array for result
         KernelTime[][] result = new KernelTime[dataSizesBytes.length][numberExecutions];

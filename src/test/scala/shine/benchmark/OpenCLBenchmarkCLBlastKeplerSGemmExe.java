@@ -1,5 +1,3 @@
-package shine.benchmark;
-
 import java.io.IOException;
 
 public class OpenCLBenchmarkCLBlastKeplerSGemmExe extends OpenCLBenchmarkCLBlastKeplerSGemm {
@@ -11,7 +9,7 @@ public class OpenCLBenchmarkCLBlastKeplerSGemmExe extends OpenCLBenchmarkCLBlast
         opencl.executor.Executor.init();
 
         //Warmup + benchmark kernel + print with differnt dataSizes (dataSizes in OpenClBenchmarkUtils.java)
-        OpenCLBenchmarkUtils.benchmark(kernel, options, creator);
+        OpenCLBenchmarkUtils.benchmark(kernel, options, creator, dataSizes);
 
         //Shutdown Executor
         opencl.executor.Executor.shutdown();

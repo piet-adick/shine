@@ -14,9 +14,18 @@ public class OpenCLBenchmarkKeplerSGemmTotal extends OpenCLBenchmarkKeplerSGemm 
         //Warm up
         OpenCLBenchmarkUtilsTotal.benchmark(kernel, options, BenchmarkConfig.numberExecutionsWarmUp, creator, BenchmarkConfig.warmUpSize);
 
-        OpenCLBenchmarkUtilsTotal.BenchmarkResult result = OpenCLBenchmarkUtilsTotal.benchmark(kernel, options, BenchmarkConfig.numberExecutions, creator, BenchmarkConfig.dataSizesGEMM);
+        OpenCLBenchmarkUtilsTotal.BenchmarkResult result = OpenCLBenchmarkUtilsTotal.benchmark(kernel, options, BenchmarkConfig.numberExecutions, creator, dataSizes);
 
-        System.out.println(result);
+        String resultString = result.toString();
+        for (long dataSize : dataSizes) {
+            String empty = "";
+            if (creator.getDataLength(dataSize) < 100)
+                empty = "  ";
+            resultString = resultString.replaceFirst("B: execution-time:", "B (" + creator.getDataLength(dataSize) + "x"
+                    + creator.getDataLength(dataSize) + " matrices): execution-time:" + empty);
+        }
+
+        System.out.println(resultString);
 
         //Shutdown Executor
         opencl.executor.Executor.shutdown();

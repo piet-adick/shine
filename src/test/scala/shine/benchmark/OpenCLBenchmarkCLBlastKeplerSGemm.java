@@ -10,6 +10,7 @@ public class OpenCLBenchmarkCLBlastKeplerSGemm {
     //Kernelname (kernelcode in file kernelname.cl)
     static String kernel = "clblast_kepler_sgemm";
     static String options = "";
+    static long[] dataSizes = BenchmarkConfig.dataSizesGEMMCLBlastKepler;
 
     //KernelArgCreator
     static KernelArgCreator creator = new KernelArgCreator(){

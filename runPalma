@@ -53,7 +53,7 @@ buildYacx() {
 buildExecutor() {
     executorPath="$1"
     
-    echo "Building Yacx in $executorPath" &&
+    echo "Building OpenCL-Executor in $executorPath" &&
     pushd "$executorPath" &&
 
     #Build
@@ -147,16 +147,12 @@ executeCL() {
     
     javac "$executorExampleName.java" &&
     
-    echo "" &&
     echo "--------------------------------------------------------------------------------------------------------------------" &&
     echo "Execute Example with OpenCLExecutor: $executorExampleName in $(basename $executorDir)" &&
-    echo "" &&
 
     java -Xmx10G -ea -Djava.library.path=. "$executorExampleName" &&
     
-    echo "" &&
     echo "--------------------------------------------------------------------------------------------------------------------" &&
-    echo "" &&
     
     popd &&
     popd
@@ -175,16 +171,12 @@ executeShineExample() {
     
     pushd "$shineDir" &&
     
-    echo "" &&
     echo "--------------------------------------------------------------------------------------------------------------------" &&
     echo "Execute Example with Shine: $shineExamplePackage.$shineExample in $shineDir" &&
-    echo "" &&
     
     ../sbt/bin/sbt "testOnly $shineExamplePackage.$shineExample" &&
     
-    echo "" &&
     echo "--------------------------------------------------------------------------------------------------------------------" &&
-    echo "" &&
     
     popd
 }
@@ -214,51 +206,51 @@ echo "Refresh branches..." &&
 echo "" &&
 
 #Refresh
-if [ ! -d "$yacxGEMM" ]; then
-    git clone https://github.com/ZerataX/yacx.git "$yacxGEMM" &&
-    pushd "$yacxGEMM" &&
-    git checkout "FastKernelExample&Transposition" &&
-    popd
-else
-    pushd "$yacxGEMM" &&
-    git pull &&
-    popd
-fi &&
-echo "" && echo "" &&
-
-    
-if [ ! -d "$yacxGEMMPinnend" ]; then
-    git clone https://github.com/ZerataX/yacx.git "$yacxGEMMPinnend" &&
-    pushd "$yacxGEMMPinnend" &&
-    git checkout "FastKernelExample&TranspositionPinnend" &&
-    popd
-else
-    pushd "$yacxGEMMPinnend" &&
-    git pull &&
-    popd
-fi &&
-echo "" && echo "" &&
-    
-if [ ! -d "$yacxGEMMPinnendStream" ]; then
-    git clone https://github.com/ZerataX/yacx.git "$yacxGEMMPinnendStream" &&
-    pushd "$yacxGEMMPinnendStream" &&
-    git checkout "FastKernelExample&TranspositionPinnendStream" &&
-    popd
-else
-    pushd "$yacxGEMMPinnendStream" &&
-    git pull &&
-    popd
-fi &&
-echo "" && echo "" &&
-
-if [ ! -d "$executorKernelTime" ]; then
-    git clone https://github.com/LukasSiefke/executor "$executorKernelTime"
-else
-    pushd "$executorKernelTime" &&
-    git pull &&
-    popd
-fi &&
-echo "" && echo "" &&
+# if [ ! -d "$yacxGEMM" ]; then
+#     git clone https://github.com/ZerataX/yacx.git "$yacxGEMM" &&
+#     pushd "$yacxGEMM" &&
+#     git checkout "FastKernelExample&Transposition" &&
+#     popd
+# else
+#     pushd "$yacxGEMM" &&
+#     git pull &&
+#     popd
+# fi &&
+# echo "" && echo "" &&
+# 
+#     
+# if [ ! -d "$yacxGEMMPinnend" ]; then
+#     git clone https://github.com/ZerataX/yacx.git "$yacxGEMMPinnend" &&
+#     pushd "$yacxGEMMPinnend" &&
+#     git checkout "FastKernelExample&TranspositionPinnend" &&
+#     popd
+# else
+#     pushd "$yacxGEMMPinnend" &&
+#     git pull &&
+#     popd
+# fi &&
+# echo "" && echo "" &&
+#     
+# if [ ! -d "$yacxGEMMPinnendStream" ]; then
+#     git clone https://github.com/ZerataX/yacx.git "$yacxGEMMPinnendStream" &&
+#     pushd "$yacxGEMMPinnendStream" &&
+#     git checkout "FastKernelExample&TranspositionPinnendStream" &&
+#     popd
+# else
+#     pushd "$yacxGEMMPinnendStream" &&
+#     git pull &&
+#     popd
+# fi &&
+# echo "" && echo "" &&
+# 
+# if [ ! -d "$executorKernelTime" ]; then
+#     git clone https://github.com/LukasSiefke/executor "$executorKernelTime"
+# else
+#     pushd "$executorKernelTime" &&
+#     git pull &&
+#     popd
+# fi &&
+# echo "" && echo "" &&
 
 
 
@@ -299,16 +291,16 @@ echo "" &&
 
 #OpenCl Examples
 #Assertionfail (Falsche global size oder localSize?)
-#executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkCLBlastKeplerSGemm" &&
+#executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkCLBlastKeplerSGemmExe" &&
 #executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkCLBlastKeplerSGemmTotal" &&
 
-#executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerBestSGemm" &&
-#executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerBestSGemmTotal" &&
+executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerBestSGemmExe" &&
+executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerBestSGemmTotal" &&
 
-#executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerSGemm" &&
-executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerSGemmTotal" &&
+#executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerSGemmExe" &&
+#executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerSGemmTotal" &&
 
-#executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkReduce" &&
+#executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkReduceExe" &&
 #executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkReduceTotal" &&
 
 
