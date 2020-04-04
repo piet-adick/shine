@@ -302,8 +302,8 @@ executeYacx "$yacxGEMMPinnendStream" "shine/src/test/scala/shine/benchmark/Examp
 #OpenCl Examples
 
 #Set Device
-export LIFT_PLATFORM=1 &&
-export LIFT_DEVICE=0 &&
+export LIFT_PLATFORM=1
+export LIFT_DEVICE=0
 
 executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkCLBlastKeplerSGemmExe" &&
 executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkCLBlastKeplerSGemmTotal" &&
@@ -321,7 +321,6 @@ executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchma
 executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkReduceTotal" &&
 
 
-
 #Shine Examples
 #executeShine "$shine" "shine/src/test/scala/shine/examples/dotProduct" &&
 #executeShine "$shine" "shine/src/test/scala/shine/examples/matrixmultiplication" &&
@@ -336,9 +335,6 @@ echo ""
     echo "" && echo ""
     echo "Fatal Exception occured whine building/executing examples"
 }
-
-echo ""
-echo "Time: $(date)"
 
 
 popd

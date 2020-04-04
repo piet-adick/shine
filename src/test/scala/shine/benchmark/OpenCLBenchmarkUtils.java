@@ -7,17 +7,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 
 public class OpenCLBenchmarkUtils {
-    final static long KB = 1024;
-    final static long MB = 1024 * 1024;
-
     final static int numberExecutions = BenchmarkConfig.numberExecutions;
-			
-	public static String humanReadableByteCountBin(long bytes) {
-            return bytes < 1024L ? bytes + " B"
-                    : bytes <= 0xfffccccccccccccL >> 40 ? String.format("%.1f KiB", bytes / 0x1p10)
-                    : bytes <= 0xfffccccccccccccL >> 30 ? String.format("%.1f MiB", bytes / 0x1p20)
-                    : String.format("%.1f GiB", bytes / 0x1p30);
-        }
 
     public static void benchmark(String kernelName, String options, KernelArgCreator creator, long[] dataSizesBytes) throws IOException {
         opencl.executor.Executor.loadAndInit();
@@ -44,20 +34,11 @@ public class OpenCLBenchmarkUtils {
         int dataLength = creator.getDataLength(BenchmarkConfig.warmUpSize);
         KernelArg[] args = creator.createArgs(dataLength);
 
-		System.out.println("Warming up...");
-		System.out.println("(Local = " + creator.getLocal0(dataLength) + ", " +
-										 creator.getLocal1(dataLength) + ", " +
-										 creator.getLocal2(dataLength) + ")");
-		System.out.println("(Global = " + creator.getGlobal0(dataLength) + ", " +
-										 creator.getGlobal1(dataLength) + ", " +
-										 creator.getGlobal2(dataLength) + ")");
-
         opencl.executor.Executor.benchmark(kernelJNI, creator.getLocal0(dataLength), creator.getLocal1(dataLength), creator.getLocal2(dataLength),
           creator.getGlobal0(dataLength), creator.getGlobal1(dataLength), creator.getGlobal2(dataLength), args, BenchmarkConfig.numberExecutionsWarmUp, 0);
 
         for (KernelArg arg : args)
             arg.dispose();
-
 
         // Start run for every dataSize
         for (int i = 0; i < dataSizesBytes.length; i++) {
@@ -67,8 +48,6 @@ public class OpenCLBenchmarkUtils {
                 throw new IllegalArgumentException();
 
             dataLength = creator.getDataLength(dataSize);
-			
-			System.out.println("Benchmarking with " + humanReadableByteCountBin(dataSize) + "...");
 
 			int local0 = creator.getLocal0(dataLength);
 			int local1 = creator.getLocal1(dataLength);

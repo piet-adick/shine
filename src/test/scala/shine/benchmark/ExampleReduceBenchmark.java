@@ -81,7 +81,7 @@ public class ExampleReduceBenchmark {
 			}
 		};
 
-		long[] dataSizes = BenchmarkConfig.dataSizesReduce;
+		long[] dataSizes = BenchmarkConfig.dataSizesReduceYacx;
 
 		// Options
 		Options options = Options.createOptions();
