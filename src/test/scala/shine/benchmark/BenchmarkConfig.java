@@ -33,6 +33,7 @@ public class BenchmarkConfig {
     }
 
     public static void main(String[] args) {
+        //Print Datasizes in MB
         System.out.println("GEMMBenchmark: " + java.util.Arrays.toString(asMB(dataSizesGEMMYacx)));
         System.out.println("CLBlast: " + java.util.Arrays.toString(asMB(dataSizesGEMMCLBlastKepler)));
         System.out.println("KeplerBest: " + java.util.Arrays.toString(asMB(dataSizesKeplerBest)));
