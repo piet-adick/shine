@@ -14,7 +14,7 @@ import util.{KernelNoSizes, SyntaxChecker}
 
 //GEMM = general matrix multiply
 //With A,B,C matrices
-//This calculate result = A*B + C
+//This calculate result = alpha * A*B + beta * C
 class gemm extends test_util.Tests {
 
   val x = Identifier(freshName("x"), ExpType(PairType(f32, f32), read))
