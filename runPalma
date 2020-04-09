@@ -211,52 +211,52 @@ shine="shine"
 echo "Refresh branches..." &&
 echo "" &&
 
-#Refresh
-if [ ! -d "$yacxGEMM" ]; then
-    git clone https://github.com/ZerataX/yacx.git "$yacxGEMM" &&
-    pushd "$yacxGEMM" &&
-    git checkout "FastKernelExample&Transposition" &&
-    popd
-else
-    pushd "$yacxGEMM" &&
-    git pull &&
-    popd
-fi &&
-echo "" && echo "" &&
-
-    
-if [ ! -d "$yacxGEMMPinnend" ]; then
-    git clone https://github.com/ZerataX/yacx.git "$yacxGEMMPinnend" &&
-    pushd "$yacxGEMMPinnend" &&
-    git checkout "FastKernelExample&TranspositionPinnend" &&
-    popd
-else
-    pushd "$yacxGEMMPinnend" &&
-    git pull &&
-    popd
-fi &&
-echo "" && echo "" &&
-    
-if [ ! -d "$yacxGEMMPinnendStream" ]; then
-    git clone https://github.com/ZerataX/yacx.git "$yacxGEMMPinnendStream" &&
-    pushd "$yacxGEMMPinnendStream" &&
-    git checkout "FastKernelExample&TranspositionPinnendStream" &&
-    popd
-else
-    pushd "$yacxGEMMPinnendStream" &&
-    git pull &&
-    popd
-fi &&
-echo "" && echo "" &&
-
-if [ ! -d "$executorKernelTime" ]; then
-    git clone https://github.com/LukasSiefke/executor "$executorKernelTime"
-else
-    pushd "$executorKernelTime" &&
-    git pull &&
-    popd
-fi &&
-echo "" && echo "" &&
+# #Refresh
+# if [ ! -d "$yacxGEMM" ]; then
+#     git clone https://github.com/ZerataX/yacx.git "$yacxGEMM" &&
+#     pushd "$yacxGEMM" &&
+#     git checkout "FastKernelExample&Transposition" &&
+#     popd
+# else
+#     pushd "$yacxGEMM" &&
+#     git pull &&
+#     popd
+# fi &&
+# echo "" && echo "" &&
+# 
+#     
+# if [ ! -d "$yacxGEMMPinnend" ]; then
+#     git clone https://github.com/ZerataX/yacx.git "$yacxGEMMPinnend" &&
+#     pushd "$yacxGEMMPinnend" &&
+#     git checkout "FastKernelExample&TranspositionPinnend" &&
+#     popd
+# else
+#     pushd "$yacxGEMMPinnend" &&
+#     git pull &&
+#     popd
+# fi &&
+# echo "" && echo "" &&
+#     
+# if [ ! -d "$yacxGEMMPinnendStream" ]; then
+#     git clone https://github.com/ZerataX/yacx.git "$yacxGEMMPinnendStream" &&
+#     pushd "$yacxGEMMPinnendStream" &&
+#     git checkout "FastKernelExample&TranspositionPinnendStream" &&
+#     popd
+# else
+#     pushd "$yacxGEMMPinnendStream" &&
+#     git pull &&
+#     popd
+# fi &&
+# echo "" && echo "" &&
+# 
+# if [ ! -d "$executorKernelTime" ]; then
+#     git clone https://github.com/LukasSiefke/executor "$executorKernelTime"
+# else
+#     pushd "$executorKernelTime" &&
+#     git pull &&
+#     popd
+# fi &&
+# echo "" && echo "" &&
 
 
 
@@ -265,12 +265,12 @@ echo "" &&
 echo "Rebuild..." &&
 echo "" &&
 
-buildYacx "$yacxGEMM" &&
-buildYacx "$yacxGEMMPinnend" &&
-buildYacx "$yacxGEMMPinnendStream" &&
-
-buildExecutor "$executorDefault" &&
-buildExecutor "$executorKernelTime" &&
+# buildYacx "$yacxGEMM" &&
+# buildYacx "$yacxGEMMPinnend" &&
+# buildYacx "$yacxGEMMPinnendStream" &&
+# 
+# buildExecutor "$executorDefault" &&
+# buildExecutor "$executorKernelTime" &&
 
 #buildShine "$shine" &&
 
@@ -282,21 +282,21 @@ echo "Run Examples..." &&
 echo "" &&
 
 #Yacx Examples
-executeYacx "$yacxGEMM" "shine/src/test/scala/shine/benchmark/ExampleSimpleGEMMBenchmark" &&
-executeYacx "$yacxGEMMPinnend" "shine/src/test/scala/shine/benchmark/ExampleSimpleGEMMBenchmark" &&
-executeYacx "$yacxGEMMPinnendStream" "shine/src/test/scala/shine/benchmark/ExampleSimpleGEMMBenchmark" &&
-
-executeYacx "$yacxGEMM" "shine/src/test/scala/shine/benchmark/ExampleFastGEMMBenchmark" &&
-executeYacx "$yacxGEMMPinnend" "shine/src/test/scala/shine/benchmark/ExampleFastGEMMBenchmark" &&
-executeYacx "$yacxGEMMPinnendStream" "shine/src/test/scala/shine/benchmark/ExampleFastGEMMBenchmark" &&
-
-executeYacx "$yacxGEMM" "shine/src/test/scala/shine/benchmark/ExampleReduceBenchmark" &&
-executeYacx "$yacxGEMMPinnend" "shine/src/test/scala/shine/benchmark/ExampleReduceBenchmark" &&
-executeYacx "$yacxGEMMPinnendStream" "shine/src/test/scala/shine/benchmark/ExampleReduceBenchmark" &&
-
-executeYacx "$yacxGEMM" "shine/src/test/scala/shine/benchmark/ExampleVectorAdd" &&
-executeYacx "$yacxGEMMPinnend" "shine/src/test/scala/shine/benchmark/ExampleVectorAdd" &&
-executeYacx "$yacxGEMMPinnendStream" "shine/src/test/scala/shine/benchmark/ExampleVectorAdd" &&
+# executeYacx "$yacxGEMM" "shine/src/test/scala/shine/benchmark/ExampleSimpleGEMMBenchmark" &&
+# executeYacx "$yacxGEMMPinnend" "shine/src/test/scala/shine/benchmark/ExampleSimpleGEMMBenchmark" &&
+# executeYacx "$yacxGEMMPinnendStream" "shine/src/test/scala/shine/benchmark/ExampleSimpleGEMMBenchmark" &&
+# 
+# executeYacx "$yacxGEMM" "shine/src/test/scala/shine/benchmark/ExampleFastGEMMBenchmark" &&
+# executeYacx "$yacxGEMMPinnend" "shine/src/test/scala/shine/benchmark/ExampleFastGEMMBenchmark" &&
+# executeYacx "$yacxGEMMPinnendStream" "shine/src/test/scala/shine/benchmark/ExampleFastGEMMBenchmark" &&
+# 
+# executeYacx "$yacxGEMM" "shine/src/test/scala/shine/benchmark/ExampleReduceBenchmark" &&
+# executeYacx "$yacxGEMMPinnend" "shine/src/test/scala/shine/benchmark/ExampleReduceBenchmark" &&
+# executeYacx "$yacxGEMMPinnendStream" "shine/src/test/scala/shine/benchmark/ExampleReduceBenchmark" &&
+# 
+# executeYacx "$yacxGEMM" "shine/src/test/scala/shine/benchmark/ExampleVectorAdd" &&
+# executeYacx "$yacxGEMMPinnend" "shine/src/test/scala/shine/benchmark/ExampleVectorAdd" &&
+# executeYacx "$yacxGEMMPinnendStream" "shine/src/test/scala/shine/benchmark/ExampleVectorAdd" &&
 
 
 #OpenCl Examples
@@ -305,20 +305,22 @@ executeYacx "$yacxGEMMPinnendStream" "shine/src/test/scala/shine/benchmark/Examp
 export LIFT_PLATFORM=1 &&
 export LIFT_DEVICE=0 &&
 
-executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkCLBlastKeplerSGemmExe" &&
-executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkCLBlastKeplerSGemmTotal" &&
+executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLGEMMExample"
 
-executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerBestSGemmExe" &&
-executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerBestSGemmTotal" &&
-
-executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerSGemmExe" &&
-executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerSGemmTotal" &&
-
-executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkVectorAddExe" &&
-executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkVectorAddTotal" &&
-
-executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkReduceExe" &&
-executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkReduceTotal" &&
+# executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkCLBlastKeplerSGemmExe" &&
+# executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkCLBlastKeplerSGemmTotal" &&
+# 
+# executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerBestSGemmExe" &&
+# executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerBestSGemmTotal" &&
+# 
+# executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerSGemmExe" &&
+# executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkKeplerSGemmTotal" &&
+# 
+# executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkVectorAddExe" &&
+# executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkVectorAddTotal" &&
+# 
+# executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkReduceExe" &&
+# executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkReduceTotal" &&
 
 
 
