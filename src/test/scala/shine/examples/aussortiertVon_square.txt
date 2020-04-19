@@ -1,0 +1,249 @@
+//calculate the determinante of a 2x2 matrix als Paare
+    test("2x2Determinante") {
+      val x = Identifier(freshName("x"), ExpType(float, read))
+      val y = Identifier(freshName("y"), ExpType(float, read))
+      val add = Lambda[ExpType, FunType[ExpType, ExpType]](x, Lambda[ExpType, ExpType](y, BinOp(Operators.Binary.ADD, x, y)))
+
+      val square = Lambda[ExpType, ExpType](x, BinOp(Operators.Binary.MUL, x, x))
+      val matrix2x2 = Identifier(freshName("matrix2x2"), ExpType(ArrayType(2, ArrayType(2, float)), read))
+      val matrix2x2PairPair = Identifier(freshName("matrix2x2"), ExpType(PairType(PairType(float,float),PairType(float,float)),read))
+
+      val squareEveryElementInMatrix = Lambda[ExpType, ExpType](
+        matrix2x2,
+        Split(2,2,read,float,
+          MapSeq(4, float, float,square, Join(2,2,  write,float,
+            matrix2x2
+          ))
+        )
+      )
+   println(ProgramGenerator.makeCode(squareEveryElementInMatrix, "squareEveryElementInMatrix").code)
+    }
+
+
+
+
+
+    //(______________________________________________________________________)
+    //calculate the determinante of a 2x2 matrix als Paare
+    test("nochzugemuellt") {
+      //val n = NatIdentifier(freshName("n")) //size of the vector
+
+      val x = Identifier(freshName("x"), ExpType(float, read))
+      val y = Identifier(freshName("y"), ExpType(float, read))
+      //val p = Identifier(freshName("p"), ExpType(PairType(float, float), read))
+      val add = Lambda[ExpType, FunType[ExpType, ExpType]](x, Lambda[ExpType, ExpType](y, BinOp(Operators.Binary.ADD, x, y)))
+      //val sub = Lambda[ExpType, FunType[ExpType, ExpType]](x, Lambda[ExpType, ExpType](y, BinOp(Operators.Binary.SUB, x, y)))
+      //val mulxy = Lambda[ExpType, FunType[ExpType, ExpType]](x, Lambda[ExpType, ExpType](y, BinOp(Operators.Binary.MUL, x, y)))
+
+      //val mulPair = Lambda[ExpType, ExpType](p, BinOp(Operators.Binary.MUL, Fst(float, float, p), Snd(float, float, p)))
+
+      val square = Lambda[ExpType, ExpType](x, BinOp(Operators.Binary.MUL, x, x))
+
+      //val vec2lang = Identifier(freshName("vec"), ExpType(ArrayType(2, float), read))
+      //val vec2langTwo = Identifier(freshName("vecTwo"), ExpType(ArrayType(2, float), read))
+      //val vec1und0 = ExpType(Array(ArrayType(2,float), (Literal(FloatData(1.0f)),Literal(FloatData(0.0f)))), read)
+      val matrix2x2 = Identifier(freshName("matrix2x2"), ExpType(ArrayType(2, ArrayType(2, float)), read))
+      //val matrix2x2Pair = Identifier(freshName("matrix2x2"), ExpType(PairType(ArrayType(2, float),ArrayType(2, float)), read))
+      val matrix2x2PairPair = Identifier(freshName("matrix2x2"), ExpType(PairType(PairType(float,float),PairType(float,float)),read))
+      //val ZipMein = Lambda[ExpType, FunType[ExpType, ExpType]](vec2lang,Lambda[ExpType, ExpType](vec2langTwo, Zip(2, float, float, vec2lang, vec2langTwo)))
+      //val ZipMein2 = Lambda[ExpType, ExpType](vec2langTwo, Zip(2, float, float, vec2langTwo, vec2langTwo))
+      //val ZipMein3 = Lambda[ExpType, ExpType](vec2langTwo, ZIPWriteVonAndre(2, float, float, vec2langTwo, vec2langTwo))
+
+      //Hier auch die Fehlermeldung nur eben mit Don't know how to assign value of type n5.float
+      //val n = NatIdentifier(freshName("n"))
+      //      val vecA = Identifier(freshName("vecA"), ExpType(ArrayType(n, float), read))
+      //      val ZipMein4 = DepLambda[NatKind](n)(
+      //        Lambda[ExpType, ExpType](vecA, ZIPWriteVonAndre(n, float, float, vecA, vecA))
+      //      )
+      //val n = NatIdentifier(freshName("n"))
+      //      val vecA = Identifier(freshName("vecA"), ExpType(ArrayType(n, float), read))
+      //      val ZipMein5 = DepLambda[NatKind](n)(
+      //        Lambda[ExpType, ExpType](vecA, Zip(n, float, float, vecA, vecA))
+      //      )
+
+
+      val addiereNurErstenBeidenElementeMatrix = Lambda[ExpType, ExpType](matrix2x2,
+        BinOp(Operators.Binary.ADD,
+            ReduceSeq(2, float,float, add,Literal(FloatData(0.0f)),  Join(1,2,read, float,Drop(1,1, read, ArrayType(2, float),matrix2x2)
+        )), Literal(FloatData(1.0f))))
+
+      //Hier benutze ich anscheinend IndexAsNat falsch
+      //      val determinante = Lambda[ExpType, ExpType](matrix2x2,
+      //        BinOp(Operators.Binary.SUB,
+      //          //ad
+      //          BinOp(Operators.Binary.MUL,
+      //            //a
+      //            IndexAsNat(0,
+      //              IndexAsNat(0, matrix2x2)
+      //            ),
+      //            //d
+      //            IndexAsNat(1,IndexAsNat(1, matrix2x2))),
+      //          //bc
+      //          BinOp(Operators.Binary.MUL,
+      //            //b
+      //            IndexAsNat(0,IndexAsNat(1, matrix2x2)),
+      //            //c
+      //            IndexAsNat(1,IndexAsNat(0, matrix2x2)))
+      //
+      //        ))
+
+
+      val determinante2x2Pair = Lambda[ExpType, ExpType](
+        matrix2x2PairPair,
+        BinOp(Operators.Binary.SUB,
+          //ad
+          BinOp(Operators.Binary.MUL,
+            //a
+            Fst(float,float,Fst(PairType(float,float), PairType(float,float),
+              matrix2x2PairPair
+            )),
+            //d
+            Snd(float,float,Snd(PairType(float,float), PairType(float,float),
+              matrix2x2PairPair
+            ))),
+            //bc
+            BinOp(Operators.Binary.MUL,
+              //a
+              Fst(float,float,Snd(PairType(float,float), PairType(float,float),
+                matrix2x2PairPair
+              )),
+              //d
+              Snd(float,float,Fst(PairType(float,float), PairType(float,float),
+                matrix2x2PairPair
+              )))
+
+        )
+
+      )
+
+
+
+      //bei Tranpose muss es erst ein Array darum noch gebastelt werden
+      //found exp[2.float, read] expected exp[2.1.float, read]
+      //val determinante2x2Pair = Lambda[ExpType, ExpType](
+      //        matrix2x2Pair,
+      //        //ad+bc
+      //        ReduceSeq(n, float, float, add, Literal(FloatData(0.0f)),
+      //          MapSeq(n, PairType(float, float), float, mul,
+      //            //[(a,d),(b,c)]
+      //            Zip(2,float,float,
+      //
+      //              //[a,b]
+      //              Fst(ArrayType(2, float), ArrayType(2, float),
+      //                  matrix2x2Pair
+      //                ),
+      //
+      //              //[d,c]
+      //              FunctionalPrimitives.Transpose(2,1,float,
+      //                Snd(ArrayType(2, float), ArrayType(2, float),
+      //                    matrix2x2Pair
+      //                  ))
+      //            )
+      //
+      //          )))
+
+
+      //Join joint tut einfach alle Elemente der Menge von den Elementen des Arrays in
+      //ein großes Array
+      //val determinante2x2 = Lambda[ExpType, ExpType](
+      //        matrix2x2,
+      //        //ad+bc //mann muss noch add bei reduceSeq mit minus ersetzen
+      //        ReduceSeq(n, float, float, add, Literal(FloatData(0.0f)),
+      //          MapSeq(n, PairType(float, float), float, mul,
+      //            //[(a,d),(b,c)]
+      //            Zip(2,float,float,
+      //
+      //              //[a,b]
+      //              Fst(float, float,Unzip(2,float, float,
+      //                Join(2,2, read, float,
+      //                  matrix2x2
+      //                ))),
+      //
+      //              //[d,c]
+      //              FunctionalPrimitives.Transpose(2, 1, ArrayType(2,float),
+      //                Snd(float, float,Unzip(2,float, float,
+      //                  Join(2,2, read, float,
+      //                    matrix2x2
+      //                  ))))
+      //            )
+      //
+      //          )))
+
+//      val determinante = Lambda[ExpType, ExpType](
+      //        matrix2x2,
+      //        //ad+bc mann muss noch add bei reduceSeq mit minus ersetzen
+      //        ReduceSeq(2, float, float, add, Literal(FloatData(0.0f)),
+      //          MapSeq(2, PairType(float, float), float, mul,
+      //            //   [(a,d),(b,c)]
+      //            Zip(2,float,float,
+      //
+      //              //  [a,b]
+      //              Fst(float, float,Unzip(2,float, float,
+      //                MapSeq(2, ArrayType(2, float), ArrayType(2,ArrayType(2, float)), ZipMein2,
+      //                  matrix2x2
+      //                ))),
+      //
+      //              //[d,c]
+      //              Transpose(2,ArrayType(2,float),
+      //                Snd(float, float,Unzip(2,float, float,
+      //                  MapSeq(2, ArrayType(2, float), ArrayType(2,ArrayType(2, float)), ZipMein2,
+      //                    matrix2x2
+      //                  ))))
+      //            )
+      //          )))
+
+//Er bekommt folgende Fehlermeldung, wo er read erwartet, aber write bekommt
+      //Type error: found (exp[2.float, read]) -> exp[2.(float x float), read] expected (exp[2.float, read]) -> exp[(float x float), write]
+ //     val determinanteHaha = Lambda[ExpType, ExpType](
+      //        matrix2x2,
+      //              Fst(float, float,Unzip(2,float, float,
+      //                MapSeq(2, ArrayType(2, float), PairType(float,float), ZipMein2,
+      //                  matrix2x2
+      //                )))
+      //)
+
+      //Fehler: Don't know how to assign value of type 2.float
+      //val quadriereJedesElementInMatrize = Lambda[ExpType, ExpType](
+      //        matrix2x2,
+      //        Split(2,2,read,float,
+      //        MapSeq(4, PairType(float,float), float,mulPair, Join(2,2,  write,PairType(float,float),
+      //          MapSeq(2, ArrayType(2, float), ArrayType(2,PairType(float, float)), ZipMein3,
+      //            matrix2x2
+      //          )))
+      //        )
+      //      )
+
+      val squareEveryElementInMatrix = Lambda[ExpType, ExpType](
+        matrix2x2,
+        Split(2,2,read,float,
+          MapSeq(4, float, float,square, Join(2,2,  write,float,
+              matrix2x2
+            ))
+        )
+      )
+
+
+
+      println(ProgramGenerator.makeCode(determinante2x2Pair, "determinante2x2").code)
+
+      //Falls man ausführt, bekommt man: Don't know how to assign value of type 2.float
+      //println(ProgramGenerator.makeCode(ZipMein, "ZipMein").code)
+
+      //Wieder der Fehler: Don't know how to assign value of type 2.float
+      //Ich glaube, dass dieser Fehler aussagt, dass der Programmgenerator nur float* output
+      //mit nur einem float drin zurückgeben kann und keine Tupel, wie bei ZipMein2 es
+      //der Fall wäre
+      //println(ProgramGenerator.makeCode(ZipMein2, "ZipMein").code)
+      //println(ProgramGenerator.makeCode(ZipMein5, "ZipMein").code)
+
+      println(ProgramGenerator.makeCode(addiereNurErstenBeidenElementeMatrix, "addiereNurErstenBeidenElementeMatrix").code)
+
+      //Auf den vorherigen Fehler aufbauen, bekommt er die Fehlermeldung, dass er ein write erwartet,
+      //aber nur ein read bekam
+      //Type error: found (exp[2.float, read]) -> exp[2.(float x float), read] expected (exp[2.float, read]) -> exp[(float x float), write]
+      //Wahrscheinlich ist das mit den vorherigen Fehler mit ZipMein2 zu tun
+      //println(ProgramGenerator.makeCode(determinanteHaha, "determinanteHaha").code)
+
+
+      println(ProgramGenerator.makeCode(squareEveryElementInMatrix, "squareEveryElementInMatrix").code)
+    }
