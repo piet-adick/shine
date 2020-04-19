@@ -18,7 +18,7 @@ import shine.DPIA.freshName
       val add = Lambda[ExpType, FunType[ExpType, ExpType]](x, Lambda[ExpType, ExpType](y, BinOp(Operators.Binary.ADD, x, y)))
 
 
-      val matrix2x2 = Identifier(freshName("matrix2x2"), ExpType(ArrayType(2, ArrayType(2, float)), read))
+      val matrix2x2 = Identifier(freshName("matrix2x2_"), ExpType(ArrayType(2, ArrayType(2, float)), read))
 
       val addiereNurdieZweiteSpalteMatrix = Lambda[ExpType, ExpType](matrix2x2,
         BinOp(Operators.Binary.ADD,
@@ -30,7 +30,7 @@ import shine.DPIA.freshName
     
     //calculate the determinante of a 2x2 matrix als Paare
     test("determinante2x2Pair") {
-      val matrix2x2PairPair = Identifier(freshName("matrix2x2"), ExpType(PairType(PairType(float, float), PairType(float, float)), read))
+      val matrix2x2PairPair = Identifier(freshName("matrix2x2_"), ExpType(PairType(PairType(float, float), PairType(float, float)), read))
 
       val determinante2x2Pair = Lambda[ExpType, ExpType](
         matrix2x2PairPair,
@@ -66,7 +66,7 @@ import shine.DPIA.freshName
     test("squareEveryElementInMatrix") {
       val x = Identifier(freshName("x"), ExpType(float, read))
       val square = Lambda[ExpType, ExpType](x, BinOp(Operators.Binary.MUL, x, x))
-      val matrix2x2 = Identifier(freshName("matrix2x2"), ExpType(ArrayType(2, ArrayType(2, float)), read))
+      val matrix2x2 = Identifier(freshName("matrix2x2_"), ExpType(ArrayType(2, ArrayType(2, float)), read))
 
       val squareEveryElementInMatrix = Lambda[ExpType, ExpType](
         matrix2x2,
