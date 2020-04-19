@@ -7,12 +7,11 @@ import shine.DPIA.Semantics.OperationalSemantics.FloatData
 import shine.DPIA.Types.{ArrayType, ExpType, FunType, PairType, float, read, write}
 import shine.DPIA.freshName
 
-  //the amount of a vector should be compared with another vector and
-  //the greater vector should be returned
+//Hier sollen drei Testfälle beschrieben werden
   class diagonale extends test_util.Tests {
 
 
-    //calculate the determinante of a 2x2 matrix als Paare
+    //Nur die oberste Zeile wird der 2x2 Matrix addiert
     test("addiereNurErstenBeidenElementeMatrix") {
       val x = Identifier(freshName("x"), ExpType(float, read))
       val y = Identifier(freshName("y"), ExpType(float, read))
@@ -63,7 +62,7 @@ import shine.DPIA.freshName
       println(ProgramGenerator.makeCode(determinante2x2Pair, "determinante2x2Pair").code)
     }
 
-
+    //Jedes Element der 2x2Matrix wird quadriert
     test("squareEveryElementInMatrix") {
       val x = Identifier(freshName("x"), ExpType(float, read))
       val square = Lambda[ExpType, ExpType](x, BinOp(Operators.Binary.MUL, x, x))
