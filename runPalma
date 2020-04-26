@@ -305,7 +305,7 @@ echo "" &&
 export LIFT_PLATFORM=1 &&
 export LIFT_DEVICE=0 &&
 
-executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLGEMMExample"
+executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkReduceExe"
 
 # executeCL "$executorDefault" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkCLBlastKeplerSGemmExe" &&
 # executeCL "$executorKernelTime" "shine/src/test/scala/shine/benchmark/OpenCLBenchmarkCLBlastKeplerSGemmTotal" &&

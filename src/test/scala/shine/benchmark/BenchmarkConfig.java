@@ -1,3 +1,5 @@
+import java.math.BigInteger; 
+
 public class BenchmarkConfig {
     final static boolean DEBUG = false;
 
@@ -24,10 +26,12 @@ public class BenchmarkConfig {
         //This is very slowly
         dataSizesKeplerBest = generateDataSizes128(24, 6);
         dataSizesKeplerS = dataSizesGEMMCLBlastKepler;
-        dataSizesReduceYacx = generateDataSizes2048(18, 60);
+        //dataSizesReduceYacx = generateDataSizes2048(18, 60);
+		dataSizesReduceYacx = generateDataSizes2048(2, 21);
         //Datalength must be multiple of 2048
         //At Datasize of 918MB there was a out-of-memory :(
-        dataSizesReduceOpenCL = generateDataSizes2048(18, 33);
+        //dataSizesReduceOpenCL = generateDataSizes2048(18, 33);
+		dataSizesReduceOpenCL = generateDataSizes2048(2, 21);
         dataSizesVetorAdd = dataSizesGEMMCLBlastKepler;
         warmUpSize = dimToDataLength(1024*8)[0];
     }
@@ -64,11 +68,13 @@ public class BenchmarkConfig {
         return dimToDataLength(dims);
     }
 
-    static long[] generateDataSizes2048(int incrementFactor, int numberDataSizes){
+    static long[] generateDataSizes2048(long incrementFactor, int numberDataSizes){
         long[] dataSizes = new long[numberDataSizes];
 
         for (int i = 0; i < dataSizes.length; i++){
-            dataSizes[i] = 2048l + incrementFactor*2048l*128*i *4l;
+            //dataSizes[i] = 2048l + incrementFactor*2048l*128*i *4l;
+			BigInteger bi = BigInteger.valueOf(incrementFactor);
+			dataSizes[i] = 1024 * bi.pow(i).intValue();
         }
 
         return dataSizes;

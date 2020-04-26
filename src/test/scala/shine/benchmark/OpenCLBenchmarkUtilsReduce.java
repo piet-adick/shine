@@ -48,6 +48,7 @@ public class OpenCLBenchmarkUtilsReduce {
                 throw new IllegalArgumentException();
 
             dataLength = creator.getDataLength(dataSize);
+			int inputSize = (dataLength >= 2048 * 128) ? dataLength : 2048 * 128;
 
 			int local0 = creator.getLocal0(dataLength);
 			int local1 = creator.getLocal1(dataLength);
@@ -56,8 +57,19 @@ public class OpenCLBenchmarkUtilsReduce {
 			int global1 = creator.getGlobal1(dataLength);
 			int global2 = creator.getGlobal2(dataLength);
 			args = creator.createArgs(dataLength);
+			
+			// Simulate final array
+			float[] out = new float[128];
+			for (int j = 1; j <= out.length; j++) {
+				int size = inputSize / 128;
+				int now = j * size;
+				int before = (j - 1) * size;
+				float newSum = now * (now + 1) / 2;
+				float oldSum = before * (before + 1) / 2;
+				out[j - 1] = now * (now + 1) / 2 - before * (before + 1) / 2;
+			}
 
-//            System.out.println("Benchmark: " + dataLength);
+            System.out.println("Benchmark: " + dataLength);
 
             double[] resultI = opencl.executor.Executor.benchmark(kernelJNI, local0, local1, local2, global0, global1, global2, 
 																  args, numberExecutions, 0);
@@ -65,8 +77,8 @@ public class OpenCLBenchmarkUtilsReduce {
 			// Prepare grid reduces (to reduce all the results of each block)
 			dataLength /= 2048;
 			
-			while (dataLength > 1) {
-//				System.out.println("Repeating reduce for n = " + dataLength);
+			while (dataLength > 128) {
+				System.out.println("Repeating reduce for n = " + dataLength);
 				local0 = creator.getLocal0(dataLength);
 				global0 = creator.getGlobal0(dataLength);
 				args = creator.createArgs(dataLength);
@@ -82,13 +94,27 @@ public class OpenCLBenchmarkUtilsReduce {
 					resultI[j] += resultI2[j];
 				}
 			}
-
+			
+			long dt1 = 0;
+			
+			// Simulate the final reduce on the CPU
+			for (int j = 0; j < numberExecutions; j++) {
+				float temp = 0;
+				long t1 = System.currentTimeMillis();
+				
+				for (int k = 0; k < out.length; k++)
+				temp += out[k];
+			
+				dt1 = dt1 + (System.currentTimeMillis() - t1);
+			}
+		
             for (int j = 0; j < numberExecutions; j++)
                 result[i] += resultI[j];
 
             for (KernelArg arg : args)
                 arg.dispose();
 
+			result[i] += dt1;
             result[i] /= (double) numberExecutions;
         }
 

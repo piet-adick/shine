@@ -19,7 +19,7 @@ public class OpenCLBenchmarkReduce {
 
         @Override
         public KernelArg[] createArgs(int dataLength) {
-            int inputSize = (dataLength >= 2048) ? dataLength : 2048;
+            int inputSize = (dataLength >= 2048 * 128) ? dataLength : 2048 * 128;
             float[] in = new float[inputSize];
             for (int i = 0; i < in.length; i++) {
                 in[i] = (i < dataLength) ? i : 0;
@@ -39,7 +39,7 @@ public class OpenCLBenchmarkReduce {
 
         @Override
         public int getGlobal0(int dataLength) {
-            return (dataLength >= 2048) ? dataLength : 2048;
+            return (dataLength >= 2048 * 128) ? dataLength : 2048 * 128;
         }
     };
 }
