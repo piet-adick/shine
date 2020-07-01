@@ -10,19 +10,18 @@ import shine.DPIA._
 
 import scala.xml.Elem
 
-final case class Shfl(
+final case class ShflUp(
   dt: ScalarType,
-  srcLanes: Phrase[ExpType],
+  delta: Nat,
   in: Phrase[ExpType]
 )
   extends ExpPrimitive
 {
-  srcLanes :: expT((32:Nat)`.`idx((32:Nat)), read)
   in :: expT((32:Nat)`.`dt, read)
   override val t: ExpType = expT((32:Nat)`.`dt, read)
 
   override def visitAndRebuild(f: Visitor): Phrase[ExpType] =
-    Shfl(f.data(dt), VisitAndRebuild(srcLanes, f), VisitAndRebuild(in, f))
+    ShflUp(f.data(dt), delta, VisitAndRebuild(in, f))
 
   override def eval(s: Store): Data = ???
 
