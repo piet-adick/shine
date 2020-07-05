@@ -8,6 +8,7 @@ package object cuda {
   val AddressSpace: shine.DPIA.Types.AddressSpace.type =
     shine.DPIA.Types.AddressSpace
   type AddressSpace = shine.DPIA.Types.AddressSpace
+  val warpSize = 32
 
   object gridDim {
     def apply(param: Char, range : Range = ContinuousRange(1, PosInf)) =
@@ -27,6 +28,16 @@ package object cuda {
   object blockId {
     def apply(param: Char) =
       BuiltInAttribute("blockIdx", param, ContinuousRange(0, gridDim(param)))
+  }
+
+  object warpId {
+    def apply(param: Char): ArithExpr with SimplifiedExpr =
+      (blockId(param) * blockDim(param) + threadId(param)) / warpSize
+  }
+
+  object warpDim {
+    def apply(param: Char): ArithExpr with SimplifiedExpr =
+      (blockDim(param) * gridDim(param)) / warpSize
   }
 
   object globalId {
