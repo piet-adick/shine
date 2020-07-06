@@ -1,6 +1,7 @@
 package shine.cuda.primitives.functional
 
 import shine.DPIA.Compilation.TranslationContext
+import shine.DPIA.DSL._
 import shine.DPIA.Phrases.VisitAndRebuild.Visitor
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics.{Data, Store}
@@ -31,9 +32,25 @@ final case class Shfl(
   override def xmlPrinter: Elem = ???
 
   def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommType] = ???
+                         (implicit context: TranslationContext): Phrase[CommType] =
+    {
+      import shine.DPIA.Compilation.TranslationToImperative._
+      con(srcLanes)(λ(expT((32:Nat)`.`idx((32:Nat)), read))(srcLanesImp =>
+        con(in)(λ(expT((32:Nat)`.`dt, read))(inImp =>
+          A :=|((32:Nat)`.`dt)| Shfl(dt, srcLanesImp, inImp)
+        )
+      )))
+    }
 
   def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                             (implicit context: TranslationContext): Phrase[CommType] = ???
+                             (implicit context: TranslationContext): Phrase[CommType] =
+    {
+      import shine.DPIA.Compilation.TranslationToImperative._
+      con(srcLanes)(λ(expT((32:Nat)`.`idx((32:Nat)), read))(srcLanesImp =>
+        con(in)(λ(expT((32:Nat)`.`dt, read))(inImp =>
+          C(Shfl(dt, srcLanesImp, inImp))
+        )
+      )))
+    }
 
 }
