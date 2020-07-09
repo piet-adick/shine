@@ -38,8 +38,8 @@ final case class Shfl(
       con(srcLanes)(λ(expT((32:Nat)`.`idx((32:Nat)), read))(srcLanesImp =>
         con(in)(λ(expT((32:Nat)`.`dt, read))(inImp =>
           A :=|((32:Nat)`.`dt)| Shfl(dt, srcLanesImp, inImp)
-        )
-      )))
+        ))
+      ))
     }
 
   def continuationTranslation(C: Phrase[ExpType ->: CommType])
@@ -49,8 +49,8 @@ final case class Shfl(
       con(srcLanes)(λ(expT((32:Nat)`.`idx((32:Nat)), read))(srcLanesImp =>
         con(in)(λ(expT((32:Nat)`.`dt, read))(inImp =>
           C(Shfl(dt, srcLanesImp, inImp))
-        )
-      )))
+        ))
+      ))
     }
 
 }
