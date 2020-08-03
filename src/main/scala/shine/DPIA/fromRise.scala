@@ -7,6 +7,7 @@ import shine.DPIA.Semantics.{OperationalSemantics => OpSem}
 import shine.DPIA.Types._
 import shine.DPIA.Types.DataType._
 
+
 object fromRise {
   def apply(expr: l.Expr): Phrase[_ <: PhraseType] = {
     if (!l.IsClosedForm(expr)) {
@@ -173,8 +174,10 @@ object fromRise {
   def primitive(p: l.Primitive, t: lt.Type): Phrase[_ <: PhraseType] = {
     import rise.OpenCL.{primitives => ocl}
     import rise.OpenMP.{primitives => omp}
+    import rise.cuda.{primitives => cuda}
     import shine.OpenCL.FunctionalPrimitives._
     import shine.OpenMP.FunctionalPrimitives._
+    import shine.cuda.primitives.functional._
 
     (p, t) match {
       case (core.PrintType(msg),
@@ -232,6 +235,30 @@ object fromRise {
       lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
       =>
         makeMap(MapWorkGroup(dim), n, la, lb)
+
+      case (cuda.MapBlock(dim),
+      lt.FunType(lt.FunType(_, lb: lt.DataType),
+      lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
+      =>
+        makeMap(MapBlock(dim.toChar), n, la, lb)
+
+      case (cuda.MapGrid(dim),
+      lt.FunType(lt.FunType(_, lb: lt.DataType),
+      lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
+      =>
+        makeMap(MapGrid(dim.toChar), n, la, lb)
+
+      case (cuda.MapThreads(dim),
+      lt.FunType(lt.FunType(_, lb: lt.DataType),
+      lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
+      =>
+        makeMap(MapThreads(dim.toChar), n, la, lb)
+
+      case (cuda.MapWarp(dim),
+      lt.FunType(lt.FunType(_, lb: lt.DataType),
+      lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
+      =>
+        makeMap(MapWarp(dim.toChar), n, la, lb)
 
       case (core.DepMapSeq(),
       lt.FunType(

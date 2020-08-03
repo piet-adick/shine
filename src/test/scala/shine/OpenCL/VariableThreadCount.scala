@@ -10,7 +10,7 @@ import rise.OpenCL.DSL._
 class VariableThreadCount extends shine.test_util.Tests{
 
   test("test for varying amount of threads") {
-    fun((x, y) => x + y)
+
     val e =
       fun(1024`.`f32)(x =>
         x |> split(512)
