@@ -4,7 +4,6 @@
 [submodule "lib/elevate"]
 	path = lib/elevate
 	url = https://github.com/piet-adick/elevate.git
-	branch = master
 [submodule "lib/yacx"]
 	path = lib/yacx
 	url = https://github.com/ZerataX/yacx.git
