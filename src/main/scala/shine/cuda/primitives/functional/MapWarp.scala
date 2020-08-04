@@ -15,7 +15,7 @@ final case class MapWarp(dim: Char)(
   override val array: Phrase[ExpType]
 ) extends AbstractMapLoop(n, dt1, dt2, f, array)
 {
-  override def makeMap = MapThreads(dim)
+  override def makeMap = MapWarp(dim)
   override def makeMapI(
                          n: Nat,
                          dt1: DataType,
