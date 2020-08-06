@@ -2,13 +2,12 @@
 
 package shine.cuda
 
-
+import rise.cuda.DSL._
 import rise.OpenCL.TypedDSL._
 import rise.core.TypeLevelDSL._
 import rise.core.TypedDSL._
 import rise.core.types.AddressSpace._
 import rise.core.types._
-import rise.cuda.DSL._
 import util.gen
 
 
@@ -19,9 +18,15 @@ class DeviceReduceTest extends shine.test_util.Tests {
     val n = 8192
     val k = 2048
     val j = 4
+    val redop = add
 
-    val reduceWarp = fun(arr =>
-      arr |> idx(0)
+    val reduceWarp = fun(32`.`f32)(arr =>
+      arr
+      |> split(32)
+      |> mapThreads(fun(threadChunk =>
+        threadChunk
+          |> oclReduceSeq(Private)(redop)(l(0f))
+      ))
     )
 
     val f = fun(n`.`f32)(arr =>
@@ -31,12 +36,11 @@ class DeviceReduceTest extends shine.test_util.Tests {
           chunk |> split(j)
           |> mapThreads(fun(threadChunk =>
             threadChunk
-            |> oclReduceSeq(Private)(add)(l(0f))
+            |> oclReduceSeq(Private)(redop)(l(0f))
           ))
           |> split(32)
           |> mapWarp(fun(warpChunk =>
             warpChunk
-            |> printType("fst")
             |> reduceWarp
           ))
           |> padCst(0)(32-(k/j)/32)(l(0f))
@@ -47,7 +51,6 @@ class DeviceReduceTest extends shine.test_util.Tests {
             threadValue
               |> toPrivate
             ))
-            |> printType("snd")
             |> reduceWarp
           ))
         ))
