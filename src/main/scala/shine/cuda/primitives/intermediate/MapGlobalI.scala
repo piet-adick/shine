@@ -7,7 +7,7 @@ import shine.DPIA.Types.{AccType, CommType, DataType, ExpType, read}
 import shine.DPIA._
 import shine.cuda.primitives.imperative.ParForGrid
 
-final case class MapGridI(dim: Char = 'x') {
+final case class MapGlobalI(dim: Char = 'x') {
   def apply(n: Nat, dt1: DataType, dt2: DataType,
             f: Phrase[ExpType ->: AccType ->: CommType],
             in: Phrase[ExpType],
