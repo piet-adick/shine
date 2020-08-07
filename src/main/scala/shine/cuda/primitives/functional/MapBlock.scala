@@ -18,13 +18,13 @@ final case class MapBlock(dim: Char)(
   override def makeMap = MapBlock(dim)
 
   override def makeMapI(
-    n: Nat,
-    dt1: DataType,
-    dt2: DataType,
-    f: Phrase[->:[ExpType, ->:[AccType, CommType]]],
-    array: Phrase[ExpType],
-    out: Phrase[AccType])(
-    implicit context: TranslationContext
-  ): Phrase[CommType] =
+                         n: Nat,
+                         dt1: DataType,
+                         dt2: DataType,
+                         f: Phrase[->:[ExpType, ->:[AccType, CommType]]],
+                         array: Phrase[ExpType],
+                         out: Phrase[AccType])(
+                         implicit context: TranslationContext
+                       ): Phrase[CommType] =
     MapBlockI(dim)(n, dt1, dt2, f, array, out)
 }

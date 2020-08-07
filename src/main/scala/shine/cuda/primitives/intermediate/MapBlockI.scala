@@ -15,8 +15,8 @@ final case class MapBlockI(dim: Char = 'x') {
             out: Phrase[AccType]): Phrase[CommType] =
   {
     comment("mapBlock")`;`
-    ParForBlock(dim)(n, dt2, out,
-      λ(expT(idx(n), read))(i => λ(accT(dt2))(a => f(in `@` i)(a)))) `;`
-    SyncThreads()
+      ParForBlock(dim)(n, dt2, out,
+        λ(expT(idx(n), read))(i => λ(accT(dt2))(a => f(in `@` i)(a)))) `;`
+      SyncThreads()
   }
 }

@@ -49,13 +49,13 @@ case class Kernel(decls: Seq[C.AST.Decl],
     val kernelArgsCUDA = kernelArgs.map(_.asInstanceOf[KernelArgCUDA].kernelArg)
 
     val runtime = kernel.launch(
-              ArithExpr.substitute(localSize.size.x, sizeVarMapping).eval,
-              ArithExpr.substitute(localSize.size.y, sizeVarMapping).eval,
-              ArithExpr.substitute(localSize.size.z, sizeVarMapping).eval,
-              ArithExpr.substitute(globalSize.size.x, sizeVarMapping).eval,
-              ArithExpr.substitute(globalSize.size.y, sizeVarMapping).eval,
-              ArithExpr.substitute(globalSize.size.z, sizeVarMapping).eval,
-              kernelArgsCUDA.toArray: _*
+      ArithExpr.substitute(localSize.size.x, sizeVarMapping).eval,
+      ArithExpr.substitute(localSize.size.y, sizeVarMapping).eval,
+      ArithExpr.substitute(localSize.size.z, sizeVarMapping).eval,
+      ArithExpr.substitute(globalSize.size.x, sizeVarMapping).eval,
+      ArithExpr.substitute(globalSize.size.y, sizeVarMapping).eval,
+      ArithExpr.substitute(globalSize.size.z, sizeVarMapping).eval,
+      kernelArgsCUDA.toArray: _*
     )
 
     runtime.getLaunch().asInstanceOf[Double]

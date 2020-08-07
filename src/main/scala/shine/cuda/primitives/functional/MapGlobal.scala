@@ -5,9 +5,9 @@ import shine.DPIA.FunctionalPrimitives.AbstractMapLoop
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types._
 import shine.DPIA._
-import shine.cuda.primitives.intermediate.MapGridI
+import shine.cuda.primitives.intermediate.MapGlobalI
 
-final case class MapGrid(dim: Char)(
+final case class MapGlobal(dim: Char)(
   override val n: Nat,
   override val dt1: DataType,
   override val dt2: DataType,
@@ -16,14 +16,14 @@ final case class MapGrid(dim: Char)(
 ) extends AbstractMapLoop(n, dt1, dt2, f, array)
 {
   override def makeMap =
-    MapGrid(dim)
+    MapGlobal(dim)
 
   override def makeMapI(
-    n: Nat, dt1: DataType, dt2: DataType,
-    f: Phrase[->:[ExpType, ->:[AccType, CommType]]],
-    array: Phrase[ExpType],
-    out: Phrase[AccType])(
-    implicit context: TranslationContext
-  ): Phrase[CommType] =
-    MapGridI(dim)(n, dt1, dt2, f, array, out)
+                         n: Nat, dt1: DataType, dt2: DataType,
+                         f: Phrase[->:[ExpType, ->:[AccType, CommType]]],
+                         array: Phrase[ExpType],
+                         out: Phrase[AccType])(
+                         implicit context: TranslationContext
+                       ): Phrase[CommType] =
+    MapGlobalI(dim)(n, dt1, dt2, f, array, out)
 }

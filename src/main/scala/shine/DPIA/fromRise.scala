@@ -222,7 +222,7 @@ object fromRise {
       lt.FunType(lt.FunType(_, lb: lt.DataType),
       lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
       =>
-        makeMap(MapGlobal(dim), n, la, lb)
+        makeMap(shine.OpenCL.FunctionalPrimitives.MapGlobal(dim), n, la, lb)
 
       case (ocl.MapLocal(dim),
       lt.FunType(lt.FunType(_, lb: lt.DataType),
@@ -242,11 +242,11 @@ object fromRise {
       =>
         makeMap(MapBlock(dim.toChar), n, la, lb)
 
-      case (cuda.MapGrid(dim),
+      case (cuda.MapGlobal(dim),
       lt.FunType(lt.FunType(_, lb: lt.DataType),
       lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
       =>
-        makeMap(MapGrid(dim.toChar), n, la, lb)
+        makeMap(shine.cuda.primitives.functional.MapGlobal(dim.toChar), n, la, lb)
 
       case (cuda.MapThreads(dim),
       lt.FunType(lt.FunType(_, lb: lt.DataType),
@@ -259,6 +259,12 @@ object fromRise {
       lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
       =>
         makeMap(MapWarp(dim.toChar), n, la, lb)
+
+      case (cuda.MapLane(dim),
+      lt.FunType(lt.FunType(_, lb: lt.DataType),
+      lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
+      =>
+        makeMap(MapLane(dim), n, la, lb)
 
       case (core.DepMapSeq(),
       lt.FunType(

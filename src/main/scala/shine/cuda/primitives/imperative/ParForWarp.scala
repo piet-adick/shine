@@ -17,12 +17,12 @@ final case class ParForWarp(dim: Char)(
   unroll: Boolean = false
 ) extends CudaParFor(n, dt, out, body, init, step, unroll) {
 
+  override val name: String = freshName("warp_id_")
+
   override val makeCLParFor =
     (n: Nat, dt: DataType, out: Phrase[AccType],
      body: Phrase[ExpType ->: AccType ->: CommType], init: Nat, step: Nat) =>
-      ParForThreads(dim)(n, dt, out, body, init, step, unroll)
+      ParForWarp(dim)(n, dt, out, body, init, step, unroll)
 
-  override val parallelismLevel = OpenCL.Global
-
-  override val name: String = freshName("warp_id")
+  override val parallelismLevel = OpenCL.Local
 }

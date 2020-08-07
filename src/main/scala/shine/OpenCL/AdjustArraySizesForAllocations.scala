@@ -8,7 +8,7 @@ import shine.DPIA.Types._
 import shine.DPIA._
 import shine.OpenCL.FunctionalPrimitives._
 import shine.OpenCL.ImperativePrimitives._
-import shine.cuda.primitives.functional.{MapBlock, MapGrid, MapThreads}
+import shine.cuda.primitives.functional.{MapBlock, MapLane, MapThreads, MapWarp}
 
 object AdjustArraySizesForAllocations {
   case class DataTypeAdjustment(accF: Phrase[AccType] => Phrase[AccType],
@@ -30,14 +30,16 @@ object AdjustArraySizesForAllocations {
   }
 
   private def visitAndGatherInformation[T <: PhraseType](p: Phrase[T],
-                                                 parallInfo: List[ParallelismInfo]): List[ParallelismInfo] = {
+                                                         parallInfo: List[ParallelismInfo]): List[ParallelismInfo] = {
     p match {
-      case mG@MapGlobal(dim) => visitAndGatherInformation(mG.f, BasicInfo(Global, dim) :: parallInfo)
+      case mG@shine.OpenCL.FunctionalPrimitives.MapGlobal(dim) => visitAndGatherInformation(mG.f, BasicInfo(Global, dim) :: parallInfo)
       case mWG@MapWorkGroup(dim) => visitAndGatherInformation(mWG.f, BasicInfo(WorkGroup, dim) :: parallInfo)
       case mL@MapLocal(dim) => visitAndGatherInformation(mL.f, BasicInfo(Local, dim) :: parallInfo)
-      case mG@MapThreads(dim) => visitAndGatherInformation(mG.f, BasicInfo(Global, dim) :: parallInfo)
-      case mWG@MapGrid(dim) => visitAndGatherInformation(mWG.f, BasicInfo(WorkGroup, dim) :: parallInfo)
-      case mL@MapBlock(dim) => visitAndGatherInformation(mL.f, BasicInfo(Local, dim) :: parallInfo)
+      case mWG@shine.cuda.primitives.functional.MapGlobal(dim) => visitAndGatherInformation(mWG.f, BasicInfo(Global, dim) :: parallInfo)
+      case mB@MapBlock(dim) => visitAndGatherInformation(mB.f, BasicInfo(WorkGroup, dim) :: parallInfo)
+      case mG@MapThreads(dim) => visitAndGatherInformation(mG.f, BasicInfo(Local, dim) :: parallInfo)
+      case mW@MapWarp(dim) => visitAndGatherInformation(mW.f, BasicInfo(Local, dim) :: parallInfo)
+      case mL@MapLane(dim) => visitAndGatherInformation(mL.f, BasicInfo(Local, dim) :: parallInfo)
       case mS: MapSeq => visitAndGatherInformation(mS.f, BasicInfo(Sequential, -1) :: parallInfo)
       case mS: MapSeqUnroll => visitAndGatherInformation(mS.f, BasicInfo(Sequential, -1) :: parallInfo)
 
@@ -79,10 +81,10 @@ object AdjustArraySizesForAllocations {
   }
 
   private def adjustedAcceptor(parallInfo: List[ParallelismInfo],
-                       adjDt: DataType,
-                       oldDt: DataType,
-                       addrSpace: AddressSpace)
-                      (A: Phrase[AccType]): Phrase[AccType] = {
+                               adjDt: DataType,
+                               oldDt: DataType,
+                               addrSpace: AddressSpace)
+                              (A: Phrase[AccType]): Phrase[AccType] = {
     if (parallInfo.isEmpty) A
     else {
 
@@ -115,10 +117,10 @@ object AdjustArraySizesForAllocations {
   }
 
   private def adjustedExpr(parallInfo: List[ParallelismInfo],
-                   adjDt: DataType,
-                   oldDt: DataType,
-                   addrSpace: AddressSpace)
-                  (E: Phrase[ExpType]): Phrase[ExpType] = {
+                           adjDt: DataType,
+                           oldDt: DataType,
+                           addrSpace: AddressSpace)
+                          (E: Phrase[ExpType]): Phrase[ExpType] = {
     if (parallInfo.isEmpty) E
     else {
 

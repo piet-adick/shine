@@ -32,12 +32,17 @@ package object cuda {
 
   object warpId {
     def apply(param: Char): ArithExpr with SimplifiedExpr =
-      (blockId(param) * blockDim(param) + threadId(param)) / warpSize
+      threadId(param) / warpSize
   }
 
   object warpDim {
     def apply(param: Char): ArithExpr with SimplifiedExpr =
-      (blockDim(param) * gridDim(param)) / warpSize
+      blockDim(param) / warpSize
+  }
+
+  object laneId {
+    def apply(param: Char): ArithExpr with SimplifiedExpr =
+      threadId(param) % warpSize
   }
 
   object globalId {

@@ -14,7 +14,7 @@ final case class MapThreadsI(dim: Char = 'x') {
             out: Phrase[AccType]): Phrase[CommType] =
   {
     comment("mapThreads")`;`
-    ParForThreads(dim)(n, dt2, out,
-      λ(expT(idx(n), read))(i => λ(accT(dt2))(a => f(in `@` i)(a))))
+      ParForThreads(dim)(n, dt2, out,
+        λ(expT(idx(n), read))(i => λ(accT(dt2))(a => f(in `@` i)(a))))
   }
 }

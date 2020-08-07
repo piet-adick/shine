@@ -6,7 +6,7 @@ import shine.DPIA.Types.{AddressSpace, ArrayType, ExpType, NatKind, int, read}
 import shine.DPIA.{NatIdentifier, freshName}
 import shine.OpenCL.FunctionalPrimitives.{MapLocal, MapWorkGroup, To}
 import shine.OpenCL._
-import shine.cuda.primitives.functional.{MapBlock, MapGrid}
+import shine.cuda.primitives.functional.{MapBlock, MapGlobal}
 import shine.test_util
 
 class SharedMemoryTest extends test_util.Tests {
@@ -55,7 +55,7 @@ class SharedMemoryTest extends test_util.Tests {
     val test = DepLambda[NatKind](chunkSize)(DepLambda[NatKind](n)(
       Lambda[ExpType, ExpType](array,
         Join(n /^ chunkSize, chunkSize, read, int,
-          MapGrid('x')(n /^ chunkSize, ArrayType(chunkSize, int), ArrayType(chunkSize, int), squareShared,
+          MapGlobal('x')(n /^ chunkSize, ArrayType(chunkSize, int), ArrayType(chunkSize, int), squareShared,
             Split(chunkSize, n /^ chunkSize, read, int, array))
     ))))
 

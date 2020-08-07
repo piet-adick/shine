@@ -12,8 +12,8 @@ final case class ParForThreads(dim: Char)(
   override val dt: DataType,
   override val out: Phrase[AccType],
   override val body: Phrase[ExpType ->: AccType ->: CommType],
-  init: Nat = globalId(dim),
-  step: Nat = globalDim(dim),
+  init: Nat = threadId(dim),
+  step: Nat = blockDim(dim),
   unroll: Boolean = false
 ) extends CudaParFor(n, dt, out, body, init, step, unroll) {
 
@@ -22,7 +22,7 @@ final case class ParForThreads(dim: Char)(
      body: Phrase[ExpType ->: AccType ->: CommType], init: Nat, step: Nat) =>
       ParForThreads(dim)(n, dt, out, body, init, step, unroll)
 
-  override val parallelismLevel = OpenCL.Global
+  override val parallelismLevel = OpenCL.Local
 
-  override val name: String = freshName("gl_id_")
+  override val name: String = freshName("tid_")
 }
