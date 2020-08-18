@@ -25,13 +25,13 @@ class ReduceTest extends shine.test_util.Tests {
       // Fehlermeldung:
       //  rise.core.types.InferenceException was thrown.
       //  inference exception: expected a dependent function type, but got (idx[_n18] -> (_n18._dt19 -> _dt19))
-      val reduceWarp = fun((32 `.` f32) ->: f32)(arr =>
+      val reduceWarp = fun((32 `.` f32) ->: (1 `.` f32))(arr =>
         arr |>
           split(32) |>
           mapLane('x')(fun(result =>
             result |>
               oclReduceSeq(AddressSpace.Private)(redop)(l(0f))
-          )) |> idx(0)
+          )) //|> idx(0)
       )
 
       fun(n `.` f32)(arr =>
@@ -44,15 +44,15 @@ class ReduceTest extends shine.test_util.Tests {
                     threadChunk |>
                       oclReduceSeq(AddressSpace.Private)(redop)(l(0f)))) |> // 32.f32
                   toLocal |> // eigentlich im private memory lassen wegen shfl
-                  reduceWarp)) |> // k/j.f32
+                  reduceWarp)) |> join |> // k/j.f32
               toLocal |>
               padCst(0)(32-(k/j))(l(0f)) |> // padde um 32-#Warps viele Elemente um auf 32 zu kommen
               split(32) |>
               mapWarp(fun(warpChunk =>
                 warpChunk |>
-                  mapLane(id) |>
+                  mapLane(id) |> // für toLocal erforderlich
                   toLocal |> // eigentlich toPrivate wegen shfl
-                  reduceWarp)))))
+                  reduceWarp)) |> join )))
     }
 
     gen.cuKernel(testKernel, "reduceTest")
