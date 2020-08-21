@@ -38,8 +38,8 @@ object AdjustArraySizesForAllocations {
       case mWG@shine.cuda.primitives.functional.MapGlobal(dim) => visitAndGatherInformation(mWG.f, BasicInfo(Global, dim) :: parallInfo)
       case mB@MapBlock(dim) => visitAndGatherInformation(mB.f, BasicInfo(WorkGroup, dim) :: parallInfo)
       case mG@MapThreads(dim) => visitAndGatherInformation(mG.f, BasicInfo(Local, dim) :: parallInfo)
-      case mW@MapWarp(dim) => visitAndGatherInformation(mW.f, BasicInfo(Local, dim) :: parallInfo)
-      case mL@MapLane(dim) => visitAndGatherInformation(mL.f, BasicInfo(Local, dim) :: parallInfo)
+      case mW@MapWarp(dim) => visitAndGatherInformation(mW.f, BasicInfo(Warp, dim) :: parallInfo)
+      case mL@MapLane(dim) => visitAndGatherInformation(mL.f, BasicInfo(Lane, dim) :: parallInfo)
       case mS: MapSeq => visitAndGatherInformation(mS.f, BasicInfo(Sequential, -1) :: parallInfo)
       case mS: MapSeqUnroll => visitAndGatherInformation(mS.f, BasicInfo(Sequential, -1) :: parallInfo)
 
@@ -165,6 +165,8 @@ object AdjustArraySizesForAllocations {
       case (Local, AddressSpace.Private) => get_local_size(dim)
       case (Local, _) => 1
       case (Sequential, _) => 1
+      // cuda specific
+      case (Lane, AddressSpace.Private) => 32
       case _ => throw new Exception("This should never happen.")
     }
   }
@@ -201,7 +203,15 @@ object AdjustArraySizesForAllocations {
 
           case (BasicInfo(Sequential, _), AddressSpace.Private) => ArrayType(n, adjustedSizeDataType(elemType, is, addrSpace))
 
-          case _ => throw new Exception("This should never happen.")
+          // cuda specific
+          case (BasicInfo(Lane, _), AddressSpace.Private) => {
+            val warpSize = 32
+            ArrayType(ceilingDiv(n, warpSize), adjustedSizeDataType(elemType, is, addrSpace))
+          }
+
+
+          case t =>
+            throw new Exception("This should never happen.")
         }
       }
       //TODO think about this again

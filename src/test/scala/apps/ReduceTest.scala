@@ -10,24 +10,30 @@ import util.gen
 class ReduceTest extends shine.test_util.Tests {
   test("warp reduce test"){
     val warpTest = {
-      val op = fun((f32 x f32) ->: f32)((x, y) => x + y)
 
-      fun((32 `.` f32) ->: (32 `.` f32))(arr =>
+      val op = fun(f32 x f32)(t => t._1 + t._2)
+
+      val id = fun(x => x)
+
+      nFun(n => fun(n `.` f32)(arr =>
         arr |> //32.f32
-          mapLane(toPrivate) |> //32.f32
-          fun(x => zip(x, x)) |> //32.(f32 x f32)
-          mapLane(op) |> //32.f32
-          fun(x => zip(x, x)) |> //32.(f32 x f32)
-          mapLane(op) |> //32.f32
-          fun(x => zip(x, x)) |> //32.(f32 x f32)
-          mapLane(op) |> //32.f32
-          fun(x => zip(x, x)) |> //32.(f32 x f32)
-          mapLane(op) |> //32.f32
-          fun(x => zip(x, x)) |> //32.(f32 x f32)
-          mapLane(op) //32.f32
-      )
+          split(32) |>
+          mapWarp(fun(warpChunk =>
+            warpChunk |>
+              toPrivateFun(mapLane(id)) |> //32.f32
+              let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+              toPrivateFun(mapLane(op)) |> //32.f32
+              let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+              toPrivateFun(mapLane(op)) |> //32.f32
+              let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+              toPrivateFun(mapLane(op)) |> //32.f32
+              let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+              toPrivateFun(mapLane(op)) |> //32.f32
+              let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+              mapLane(op) //32.f32
+      ))))
     }
-    gen.cuKernel(warpTest, "warp reduce test")
+    gen.cuKernel(warpTest, "warpReduceTest")
   }
 
   test("test reduce kernel"){
@@ -65,15 +71,15 @@ class ReduceTest extends shine.test_util.Tests {
                   mapLane(fun(threadChunk =>
                     threadChunk |>
                       oclReduceSeq(AddressSpace.Private)(redop)(l(0f)))) |> // 32.f32
-                  toLocal |> // eigentlich im private memory lassen wegen shfl
+                  // toLocal |> // eigentlich im private memory lassen wegen shfl
                   reduceWarp)) |> join |> // k/j.f32
               toLocal |>
               padCst(0)(32-(k/j))(l(0f)) |> // padde um 32-#Warps viele Elemente um auf 32 zu kommen
               split(32) |>
               mapWarp(fun(warpChunk =>
                 warpChunk |>
-                  mapLane(id) |> // für toLocal erforderlich
-                  toLocal |> // eigentlich toPrivate wegen shfl
+                  //mapLane(id) |> // für toLocal erforderlich
+                  toPrivateFun(mapLane(id)) |> // eigentlich toPrivate wegen shfl
                   reduceWarp)) |> join )))
     }
 
