@@ -167,6 +167,8 @@ object AdjustArraySizesForAllocations {
       case (Sequential, _) => 1
       // cuda specific
       case (Lane, AddressSpace.Private) => 32
+      case (Lane, _) => 1
+      case (Warp, AddressSpace.Global) | (Warp, AddressSpace.Local) => 1
       case _ => throw new Exception("This should never happen.")
     }
   }

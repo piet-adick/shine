@@ -15,9 +15,12 @@ class ReduceTest extends shine.test_util.Tests {
 
       val id = fun(x => x)
 
+      val warpSize = 32
+
+      // reduceBlock: (n: nat) -> n.f32 -> n/32.f32, where n % 32 = 0
       nFun(n => fun(n `.` f32)(arr =>
         arr |> //32.f32
-          split(32) |>
+          split(warpSize) |>
           mapWarp(fun(warpChunk =>
             warpChunk |>
               toPrivateFun(mapLane(id)) |> //32.f32
@@ -30,8 +33,23 @@ class ReduceTest extends shine.test_util.Tests {
               let(fun(x => zip(x, x))) |> //32.(f32 x f32)
               toPrivateFun(mapLane(op)) |> //32.f32
               let(fun(x => zip(x, x))) |> //32.(f32 x f32)
-              mapLane(op) //32.f32
-      ))))
+              toPrivateFun(mapLane(op)) |> //32.f32
+              // Take the SUBarray consisting of 1 element(s) starting from
+              // the beginning of the array.
+              take(1) |> //1.f32
+              // Map id over the array to say that the copying the result out is a lane specific
+              // and not warp specific operation.
+              // We cannot retunr f32 with idx, because this access would be executed by the entire warp.
+              // Idx needs to access an array, so mapLane needs to write into memory first (single element array)
+              // and then we need to copy with idx from that single element array. But the element returned from idx is
+              // then copied by the entire warp again!
+              // So instead, we need to just return the single element arrays.
+              // For the entire mapWarp we get the return type n/warpSize.1.f32. After joning we get the results for
+              // reducing over an entire block (so this function is implementing reduceBlock, correct?)
+              mapLane(id) //1.f32
+          )) |> //n/32.1.f32
+          join // n/32.f32, where n/32 == #warps
+      ))
     }
     gen.cuKernel(warpTest, "warpReduceTest")
   }
