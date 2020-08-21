@@ -8,6 +8,28 @@ import rise.core.types._
 import util.gen
 
 class ReduceTest extends shine.test_util.Tests {
+  test("warp reduce test"){
+    val warpTest = {
+      val op = fun((f32 x f32) ->: f32)((x, y) => x + y)
+
+      fun((32 `.` f32) ->: (32 `.` f32))(arr =>
+        arr |> //32.f32
+          mapLane(toPrivate) |> //32.f32
+          fun(x => zip(x, x)) |> //32.(f32 x f32)
+          mapLane(op) |> //32.f32
+          fun(x => zip(x, x)) |> //32.(f32 x f32)
+          mapLane(op) |> //32.f32
+          fun(x => zip(x, x)) |> //32.(f32 x f32)
+          mapLane(op) |> //32.f32
+          fun(x => zip(x, x)) |> //32.(f32 x f32)
+          mapLane(op) |> //32.f32
+          fun(x => zip(x, x)) |> //32.(f32 x f32)
+          mapLane(op) //32.f32
+      )
+    }
+    gen.cuKernel(warpTest, "warp reduce test")
+  }
+
   test("test reduce kernel"){
     val testKernel = {
       val n = 8192
@@ -60,69 +82,71 @@ class ReduceTest extends shine.test_util.Tests {
 }
 
 //  Generierter Code: (ohne idx(0))
-//extern "C" __global__
-//void reduceTest(float* __restrict__ output, const float* __restrict__ x0, __shared__ float* __restrict__ x215, __shared__ float* __restrict__ x266, __shared__ float* __restrict__ x245){
-//  /* Start of moved local vars */
-//  /* End of moved local vars */
-//  /* mapBlock */
-//  for (int block_id_376 = blockIdx.x;(block_id_376 < 4);block_id_376 = (block_id_376 + gridDim.x)) {
-//  /* mapWarp */
-//  for (int warp_id_379 = (threadIdx.x / 32);(warp_id_379 < 16);warp_id_379 = (warp_id_379 + (blockDim.x / 32))) {
-//  /* mapLane */
-//  /* iteration count is exactly 1, no loop emitted */
-//  int lane_id_383 = (threadIdx.x % 32);
-//  /* oclReduceSeq */
-//{
-//  float x278;
-//  x278 = 0.0f;
-//  for (int i_385 = 0;(i_385 < 4);i_385 = (1 + i_385)) {
-//  x278 = (x278 + x0[(((i_385 + (4 * lane_id_383)) + (128 * warp_id_379)) + (2048 * block_id_376))]);
-//}
-//
-//  x266[lane_id_383] = x278;
-//}
-//
-//  /* mapLane */
-//  for (int lane_id_384 = (threadIdx.x % 32);(lane_id_384 < 1);lane_id_384 = (32 + lane_id_384)) {
-//  /* oclReduceSeq */
-//{
-//  float x259;
-//  x259 = 0.0f;
-//  for (int i_386 = 0;(i_386 < 32);i_386 = (1 + i_386)) {
-//  x259 = (x259 + x266[(i_386 + (32 * lane_id_384))]);
-//}
-//
-//  x245[(lane_id_384 + warp_id_379)] = x259;
-//}
-//
-//}
-//
-//}
-//
-//  /* mapWarp */
-//  for (int warp_id_382 = (threadIdx.x / 32);(warp_id_382 < 1);warp_id_382 = (warp_id_382 + (blockDim.x / 32))) {
-//  /* mapLane */
-//  /* iteration count is exactly 1, no loop emitted */
-//  int lane_id_387 = (threadIdx.x % 32);
-//  x215[lane_id_387] = ((((lane_id_387 + (32 * warp_id_382)) < 16)) ? (x245[(lane_id_387 + (32 * warp_id_382))]) : (0.0f));
-//  /* mapLane */
-//  for (int lane_id_388 = (threadIdx.x % 32);(lane_id_388 < 1);lane_id_388 = (32 + lane_id_388)) {
-//  /* oclReduceSeq */
-//{
-//  float x208;
-//  x208 = 0.0f;
-//  for (int i_389 = 0;(i_389 < 32);i_389 = (1 + i_389)) {
-//  x208 = (x208 + x215[(i_389 + (32 * lane_id_388))]);
-//}
-//
-//  output[((block_id_376 + lane_id_388) + warp_id_382)] = x208;
-//}
-//
-//}
-//
-//}
-//
-//}
-//
-//  __syncthreads();
-//}
+ /*
+extern "C" __global__
+void reduceTest(float* __restrict__ output, const float* __restrict__ x0, __shared__ float* __restrict__ x333, __shared__ float* __restrict__ x384, __shared__ float* __restrict__ x363){
+  /* Start of moved local vars */
+  /* End of moved local vars */
+  /* mapBlock */
+  for (int block_id_494 = blockIdx.x;(block_id_494 < 4);block_id_494 = (block_id_494 + gridDim.x)) {
+    /* mapWarp */
+    for (int warp_id_497 = (threadIdx.x / 32);(warp_id_497 < 16);warp_id_497 = (warp_id_497 + (blockDim.x / 32))) {
+      /* mapLane */
+      /* iteration count is exactly 1, no loop emitted */
+      int lane_id_501 = (threadIdx.x % 32);
+      /* oclReduceSeq */
+      {
+        float x396;
+        x396 = 0.0f;
+        for (int i_503 = 0;(i_503 < 4);i_503 = (1 + i_503)) {
+          x396 = (x396 + x0[(((i_503 + (4 * lane_id_501)) + (128 * warp_id_497)) + (2048 * block_id_494))]);
+        }
+
+        x384[lane_id_501] = x396;
+      }
+
+      /* mapLane */
+      for (int lane_id_502 = (threadIdx.x % 32);(lane_id_502 < 1);lane_id_502 = (32 + lane_id_502)) {
+        /* oclReduceSeq */
+        {
+          float x377;
+          x377 = 0.0f;
+          for (int i_504 = 0;(i_504 < 32);i_504 = (1 + i_504)) {
+            x377 = (x377 + x384[(i_504 + (32 * lane_id_502))]);
+          }
+
+          x363[(lane_id_502 + warp_id_497)] = x377;
+        }
+
+      }
+
+    }
+
+    /* mapWarp */
+    for (int warp_id_500 = (threadIdx.x / 32);(warp_id_500 < 1);warp_id_500 = (warp_id_500 + (blockDim.x / 32))) {
+      /* mapLane */
+      /* iteration count is exactly 1, no loop emitted */
+      int lane_id_505 = (threadIdx.x % 32);
+      x333[lane_id_505] = ((((lane_id_505 + (32 * warp_id_500)) < 16)) ? (x363[(lane_id_505 + (32 * warp_id_500))]) : (0.0f));
+      /* mapLane */
+      for (int lane_id_506 = (threadIdx.x % 32);(lane_id_506 < 1);lane_id_506 = (32 + lane_id_506)) {
+        /* oclReduceSeq */
+        {
+          float x326;
+          x326 = 0.0f;
+          for (int i_507 = 0;(i_507 < 32);i_507 = (1 + i_507)) {
+            x326 = (x326 + x333[(i_507 + (32 * lane_id_506))]);
+          }
+
+          output[((block_id_494 + lane_id_506) + warp_id_500)] = x326;
+        }
+
+      }
+
+    }
+
+  }
+
+  __syncthreads();
+}
+ */
