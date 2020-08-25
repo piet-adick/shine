@@ -8,8 +8,8 @@ import rise.core.types._
 import util.gen
 
 class ReduceTest extends shine.test_util.Tests {
-  test("warp reduce test"){
-    val warpTest = {
+  test("block reduce test"){
+    val blockTest = {
 
       val op = fun(f32 x f32)(t => t._1 + t._2)
 
@@ -51,9 +51,75 @@ class ReduceTest extends shine.test_util.Tests {
           join // n/32.f32, where n/32 == #warps
       ))
     }
-    gen.cuKernel(warpTest, "warpReduceTest")
+    gen.cuKernel(blockTest, "blockReduceTest")
   }
 
+  test("device reduce test"){
+    val deviceTest = {
+
+      val op = fun(f32 x f32)(t => t._1 + t._2)
+
+      val id = fun(x => x)
+
+      val warpSize = 32
+
+      // reduceDevice: (n: nat) -> n.f32 -> n/32.f32, where n % 32 = 0
+      nFun(n =>
+        nFun(k =>
+          nFun(j => fun(n `.` f32)(arr =>
+           arr |> split(k) |> // n/k.k.f32
+            mapBlock('x')(fun(k `.` f32)(chunk =>
+              chunk |> split(j) |> // k/j.j.f32
+                mapWarp('x')(fun(j `.` f32)(warpChunk =>
+                  warpChunk |> split(j/32) |> // 32.j/32.f32
+                    mapLane(fun(threadChunk =>
+                      threadChunk |>
+                        oclReduceSeq(AddressSpace.Private)(add)(l(0f))
+                    )) |>
+                    toPrivateFun(mapLane(id)) |> //32.f32
+                    let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+                    toPrivateFun(mapLane(op)) |> //32.f32
+                    let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+                    toPrivateFun(mapLane(op)) |> //32.f32
+                    let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+                    toPrivateFun(mapLane(op)) |> //32.f32
+                    let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+                    toPrivateFun(mapLane(op)) |> //32.f32
+                    let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+                    toPrivateFun(mapLane(op)) |> //32.f32
+                    take(1) |> //1.f32
+                    mapLane(id) //1.f32
+                )) |> //(k/j).1.f32 where (k/j) = #warps per block
+                join |> //(k/j).f32 where (k/j) = #warps per block
+                toLocal |> //(k/j).f32
+                padCst(0)(warpSize-(k/j))(l(0f)) |> //32.f32
+                split(warpSize) |> //1.32.f32 in order to execute following reduction with one warp
+                mapWarp(fun(warpSize `.` f32)(warpChunk =>
+                  warpChunk |>
+                    toPrivateFun(mapLane(id)) |> //32.f32
+                    let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+                    toPrivateFun(mapLane(op)) |> //32.f32
+                    let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+                    toPrivateFun(mapLane(op)) |> //32.f32
+                    let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+                    toPrivateFun(mapLane(op)) |> //32.f32
+                    let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+                    toPrivateFun(mapLane(op)) |> //32.f32
+                    let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+                    toPrivateFun(mapLane(op)) |> //32.f32
+                    take(1) |> //1.f32
+                    mapLane(id) //1.f32
+                )) |>
+                join
+            ))
+          ))
+        ))
+
+    }
+    gen.cuKernel(deviceTest, "deviceReduceTest")
+  }
+
+  //deprecated
   test("test reduce kernel"){
     val testKernel = {
       val n = 8192
