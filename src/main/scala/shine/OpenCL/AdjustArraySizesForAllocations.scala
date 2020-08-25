@@ -211,6 +211,7 @@ object AdjustArraySizesForAllocations {
             ArrayType(ceilingDiv(n, warpSize), adjustedSizeDataType(elemType, is, addrSpace))
           }
 
+          case (BasicInfo(Warp, _), AddressSpace.Local) => oldDt
 
           case t =>
             throw new Exception("This should never happen.")

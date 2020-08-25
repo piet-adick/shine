@@ -3,6 +3,7 @@ package apps
 import rise.cuda.DSL._
 import rise.OpenCL.DSL._
 import rise.core.DSL._
+import rise.core.Expr
 import rise.core.TypeLevelDSL._
 import rise.core.types._
 import util.gen
@@ -13,45 +14,47 @@ class ReduceTest extends shine.test_util.Tests {
 
       val op = fun(f32 x f32)(t => t._1 + t._2)
 
-      val id = fun(x => x)
-
-      val warpSize = 32
-
       // reduceBlock: (n: nat) -> n.f32 -> n/32.f32, where n % 32 = 0
       nFun(n => fun(n `.` f32)(arr =>
         arr |> //32.f32
           split(warpSize) |>
-          mapWarp(fun(warpChunk =>
-            warpChunk |>
-              toPrivateFun(mapLane(id)) |> //32.f32
-              let(fun(x => zip(x, x))) |> //32.(f32 x f32)
-              toPrivateFun(mapLane(op)) |> //32.f32
-              let(fun(x => zip(x, x))) |> //32.(f32 x f32)
-              toPrivateFun(mapLane(op)) |> //32.f32
-              let(fun(x => zip(x, x))) |> //32.(f32 x f32)
-              toPrivateFun(mapLane(op)) |> //32.f32
-              let(fun(x => zip(x, x))) |> //32.(f32 x f32)
-              toPrivateFun(mapLane(op)) |> //32.f32
-              let(fun(x => zip(x, x))) |> //32.(f32 x f32)
-              toPrivateFun(mapLane(op)) |> //32.f32
-              // Take the SUBarray consisting of 1 element(s) starting from
-              // the beginning of the array.
-              take(1) |> //1.f32
-              // Map id over the array to say that the copying the result out is a lane specific
-              // and not warp specific operation.
-              // We cannot retunr f32 with idx, because this access would be executed by the entire warp.
-              // Idx needs to access an array, so mapLane needs to write into memory first (single element array)
-              // and then we need to copy with idx from that single element array. But the element returned from idx is
-              // then copied by the entire warp again!
-              // So instead, we need to just return the single element arrays.
-              // For the entire mapWarp we get the return type n/warpSize.1.f32. After joning we get the results for
-              // reducing over an entire block (so this function is implementing reduceBlock, correct?)
-              mapLane(id) //1.f32
-          )) |> //n/32.1.f32
+          mapWarp(warpReduce(op)) |> //n/32.1.f32
           join // n/32.f32, where n/32 == #warps
       ))
     }
     gen.cuKernel(blockTest, "blockReduceTest")
+  }
+
+  val warpSize = 32
+  private val id = fun(x => x)
+  private def warpReduce(op: Expr): Expr = {
+    fun(warpChunk =>
+      warpChunk |>
+        toPrivateFun(mapLane(id)) |> //32.f32
+        let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+        toPrivateFun(mapLane(op)) |> //32.f32
+        let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+        toPrivateFun(mapLane(op)) |> //32.f32
+        let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+        toPrivateFun(mapLane(op)) |> //32.f32
+        let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+        toPrivateFun(mapLane(op)) |> //32.f32
+        let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+        toPrivateFun(mapLane(op)) |> //32.f32
+        // Take the SUBarray consisting of 1 element(s) starting from
+        // the beginning of the array.
+        take(1) |> //1.f32
+        // Map id over the array to say that the copying the result out is a lane specific
+        // and not warp specific operation.
+        // We cannot retunr f32 with idx, because this access would be executed by the entire warp.
+        // Idx needs to access an array, so mapLane needs to write into memory first (single element array)
+        // and then we need to copy with idx from that single element array. But the element returned from idx is
+        // then copied by the entire warp again!
+        // So instead, we need to just return the single element arrays.
+        // For the entire mapWarp we get the return type n/warpSize.1.f32. After joning we get the results for
+        // reducing over an entire block (so this function is implementing reduceBlock, correct?)
+        mapLane(id) //1.f32
+    )
   }
 
   test("device reduce test"){
@@ -59,57 +62,29 @@ class ReduceTest extends shine.test_util.Tests {
 
       val op = fun(f32 x f32)(t => t._1 + t._2)
 
-      val id = fun(x => x)
-
-      val warpSize = 32
-
       // reduceDevice: (n: nat) -> n.f32 -> n/32.f32, where n % 32 = 0
       nFun(n =>
-        nFun(k =>
-          nFun(j => fun(n `.` f32)(arr =>
-           arr |> split(k) |> // n/k.k.f32
-            mapBlock('x')(fun(k `.` f32)(chunk =>
-              chunk |> split(j) |> // k/j.j.f32
-                mapWarp('x')(fun(j `.` f32)(warpChunk =>
-                  warpChunk |> split(j/32) |> // 32.j/32.f32
+        nFun(numElemsBlock =>
+          nFun(numElemsWarp => fun(n `.` f32)(arr =>
+           arr |> split(numElemsBlock) |> // n/numElemsBlock.numElemsBlock.f32
+            mapBlock('x')(fun(chunk =>
+              chunk |> split(numElemsWarp) |> // numElemsBlock/numElemsWarp.numElemsWarp.f32
+                mapWarp('x')(fun(warpChunk =>
+                  warpChunk |> split(numElemsWarp/warpSize) |> // warpSize.numElemsWarp/warpSize.f32
+                    //TODO: what should we call this
+                    //FIXME: fuse this and warpReduce into a single mapLane
                     mapLane(fun(threadChunk =>
                       threadChunk |>
                         oclReduceSeq(AddressSpace.Private)(add)(l(0f))
-                    )) |>
-                    toPrivateFun(mapLane(id)) |> //32.f32
-                    let(fun(x => zip(x, x))) |> //32.(f32 x f32)
-                    toPrivateFun(mapLane(op)) |> //32.f32
-                    let(fun(x => zip(x, x))) |> //32.(f32 x f32)
-                    toPrivateFun(mapLane(op)) |> //32.f32
-                    let(fun(x => zip(x, x))) |> //32.(f32 x f32)
-                    toPrivateFun(mapLane(op)) |> //32.f32
-                    let(fun(x => zip(x, x))) |> //32.(f32 x f32)
-                    toPrivateFun(mapLane(op)) |> //32.f32
-                    let(fun(x => zip(x, x))) |> //32.(f32 x f32)
-                    toPrivateFun(mapLane(op)) |> //32.f32
-                    take(1) |> //1.f32
-                    mapLane(id) //1.f32
-                )) |> //(k/j).1.f32 where (k/j) = #warps per block
+                      //TODO: THIS was missing. but it creates an unnecessary copy, so the upper mapLane
+                      // should be inside of mapWarp in reduceWarp.
+                      // We need 2 warpReduce, like warpReduceIntermediate and warpReduceFinal (or better names)
+                    )) |> toPrivate |>
+                    warpReduce(op))) |> toLocal |> //(k/j).1.f32 where (k/j) = #warps per block
                 join |> //(k/j).f32 where (k/j) = #warps per block
-                toLocal |> //(k/j).f32
-                padCst(0)(warpSize-(k/j))(l(0f)) |> //32.f32
+                padCst(0)(warpSize-(numElemsBlock/numElemsWarp))(l(0f)) |> //32.f32
                 split(warpSize) |> //1.32.f32 in order to execute following reduction with one warp
-                mapWarp(fun(warpSize `.` f32)(warpChunk =>
-                  warpChunk |>
-                    toPrivateFun(mapLane(id)) |> //32.f32
-                    let(fun(x => zip(x, x))) |> //32.(f32 x f32)
-                    toPrivateFun(mapLane(op)) |> //32.f32
-                    let(fun(x => zip(x, x))) |> //32.(f32 x f32)
-                    toPrivateFun(mapLane(op)) |> //32.f32
-                    let(fun(x => zip(x, x))) |> //32.(f32 x f32)
-                    toPrivateFun(mapLane(op)) |> //32.f32
-                    let(fun(x => zip(x, x))) |> //32.(f32 x f32)
-                    toPrivateFun(mapLane(op)) |> //32.f32
-                    let(fun(x => zip(x, x))) |> //32.(f32 x f32)
-                    toPrivateFun(mapLane(op)) |> //32.f32
-                    take(1) |> //1.f32
-                    mapLane(id) //1.f32
-                )) |>
+                mapWarp(warpReduce(op)) |>
                 join
             ))
           ))
