@@ -18,7 +18,7 @@ class ReduceTest extends shine.test_util.Tests {
       nFun(n => fun(n `.` f32)(arr =>
         arr |> //32.f32
           split(warpSize) |>
-          mapWarp(warpReduce(op)) |> //n/32.1.f32
+          mapWarp(warpReduceFinal(op)) |> //n/32.1.f32
           join // n/32.f32, where n/32 == #warps
       ))
     }
@@ -27,7 +27,29 @@ class ReduceTest extends shine.test_util.Tests {
 
   val warpSize = 32
   private val id = fun(x => x)
-  private def warpReduce(op: Expr): Expr = {
+  private def warpReduceIntermediate(op: Expr): Expr = {
+    fun(warpChunk =>
+      warpChunk |>
+        toPrivateFun(mapLane(fun(threadChunk =>
+          threadChunk |>
+            oclReduceSeq(AddressSpace.Private)(add)(l(0f))
+        ))) |> //32.f32
+        let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+        toPrivateFun(mapLane(op)) |> //32.f32
+        let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+        toPrivateFun(mapLane(op)) |> //32.f32
+        let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+        toPrivateFun(mapLane(op)) |> //32.f32
+        let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+        toPrivateFun(mapLane(op)) |> //32.f32
+        let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+        toPrivateFun(mapLane(op)) |> //32.f32
+        take(1) |>
+        mapLane(id)
+    )
+  }
+
+  private def warpReduceFinal(op: Expr): Expr = {
     fun(warpChunk =>
       warpChunk |>
         toPrivateFun(mapLane(id)) |> //32.f32
@@ -51,8 +73,6 @@ class ReduceTest extends shine.test_util.Tests {
         // and then we need to copy with idx from that single element array. But the element returned from idx is
         // then copied by the entire warp again!
         // So instead, we need to just return the single element arrays.
-        // For the entire mapWarp we get the return type n/warpSize.1.f32. After joning we get the results for
-        // reducing over an entire block (so this function is implementing reduceBlock, correct?)
         mapLane(id) //1.f32
     )
   }
@@ -70,21 +90,14 @@ class ReduceTest extends shine.test_util.Tests {
             mapBlock('x')(fun(chunk =>
               chunk |> split(numElemsWarp) |> // numElemsBlock/numElemsWarp.numElemsWarp.f32
                 mapWarp('x')(fun(warpChunk =>
-                  warpChunk |> split(numElemsWarp/warpSize) |> // warpSize.numElemsWarp/warpSize.f32
-                    //TODO: what should we call this
-                    //FIXME: fuse this and warpReduce into a single mapLane
-                    mapLane(fun(threadChunk =>
-                      threadChunk |>
-                        oclReduceSeq(AddressSpace.Private)(add)(l(0f))
-                      //TODO: THIS was missing. but it creates an unnecessary copy, so the upper mapLane
-                      // should be inside of mapWarp in reduceWarp.
-                      // We need 2 warpReduce, like warpReduceIntermediate and warpReduceFinal (or better names)
-                    )) |> toPrivate |>
-                    warpReduce(op))) |> toLocal |> //(k/j).1.f32 where (k/j) = #warps per block
+                  warpChunk |> split(numElemsWarp/warpSize) |>
+                    warpReduceIntermediate(op)
+                ))
+                |> toLocal |> //(k/j).1.f32 where (k/j) = #warps per block
                 join |> //(k/j).f32 where (k/j) = #warps per block
                 padCst(0)(warpSize-(numElemsBlock/numElemsWarp))(l(0f)) |> //32.f32
                 split(warpSize) |> //1.32.f32 in order to execute following reduction with one warp
-                mapWarp(warpReduce(op)) |>
+                mapWarp(warpReduceFinal(op)) |>
                 join
             ))
           ))
