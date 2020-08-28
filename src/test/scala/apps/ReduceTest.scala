@@ -18,7 +18,7 @@ class ReduceTest extends shine.test_util.Tests {
       nFun(n => fun(n `.` f32)(arr =>
         arr |> //32.f32
           split(warpSize) |>
-          mapWarp(warpReduceFinal(op)) |> //n/32.1.f32
+          mapWarp(warpReduce(op)) |> //n/32.1.f32
           join // n/32.f32, where n/32 == #warps
       ))
     }
@@ -27,29 +27,7 @@ class ReduceTest extends shine.test_util.Tests {
 
   val warpSize = 32
   private val id = fun(x => x)
-  private def warpReduceIntermediate(op: Expr): Expr = {
-    fun(warpChunk =>
-      warpChunk |>
-        toPrivateFun(mapLane(fun(threadChunk =>
-          threadChunk |>
-            oclReduceSeq(AddressSpace.Private)(add)(l(0f))
-        ))) |> //32.f32
-        let(fun(x => zip(x, x))) |> //32.(f32 x f32)
-        toPrivateFun(mapLane(op)) |> //32.f32
-        let(fun(x => zip(x, x))) |> //32.(f32 x f32)
-        toPrivateFun(mapLane(op)) |> //32.f32
-        let(fun(x => zip(x, x))) |> //32.(f32 x f32)
-        toPrivateFun(mapLane(op)) |> //32.f32
-        let(fun(x => zip(x, x))) |> //32.(f32 x f32)
-        toPrivateFun(mapLane(op)) |> //32.f32
-        let(fun(x => zip(x, x))) |> //32.(f32 x f32)
-        toPrivateFun(mapLane(op)) |> //32.f32
-        take(1) |>
-        mapLane(id)
-    )
-  }
-
-  private def warpReduceFinal(op: Expr): Expr = {
+  private def warpReduce(op: Expr): Expr = {
     fun(warpChunk =>
       warpChunk |>
         toPrivateFun(mapLane(id)) |> //32.f32
@@ -82,30 +60,190 @@ class ReduceTest extends shine.test_util.Tests {
 
       val op = fun(f32 x f32)(t => t._1 + t._2)
 
-      // reduceDevice: (n: nat) -> n.f32 -> n/32.f32, where n % 32 = 0
+      // reduceDevice: (n: nat) -> n.f32 -> n/numElemsBlock.f32, where n % numElemsBlock = 0
       nFun(n =>
         nFun(numElemsBlock =>
           nFun(numElemsWarp => fun(n `.` f32)(arr =>
-           arr |> split(numElemsBlock) |> // n/numElemsBlock.numElemsBlock.f32
-            mapBlock('x')(fun(chunk =>
-              chunk |> split(numElemsWarp) |> // numElemsBlock/numElemsWarp.numElemsWarp.f32
-                mapWarp('x')(fun(warpChunk =>
-                  warpChunk |> split(numElemsWarp/warpSize) |>
-                    warpReduceIntermediate(op)
-                ))
-                |> toLocal |> //(k/j).1.f32 where (k/j) = #warps per block
-                join |> //(k/j).f32 where (k/j) = #warps per block
-                padCst(0)(warpSize-(numElemsBlock/numElemsWarp))(l(0f)) |> //32.f32
-                split(warpSize) |> //1.32.f32 in order to execute following reduction with one warp
-                mapWarp(warpReduceFinal(op)) |>
-                join
-            ))
+            arr |> split(numElemsBlock) |> // n/numElemsBlock.numElemsBlock.f32
+              mapBlock('x')(fun(chunk =>
+                chunk |> split(numElemsWarp) |> // numElemsBlock/numElemsWarp.numElemsWarp.f32
+                  mapWarp('x')(fun(warpChunk =>
+                    warpChunk |> split(numElemsWarp/warpSize) |> // warpSize.numElemsWarp/warpSize.f32
+                      //TODO: what should we call this
+                      //FIXME: fuse this and warpReduce into a single mapLane
+                      mapLane(fun(threadChunk =>
+                        threadChunk |>
+                          oclReduceSeq(AddressSpace.Private)(add)(l(0f))
+                        //TODO: THIS was missing. but it creates an unnecessary copy, so the upper mapLane
+                        // should be inside of mapWarp in reduceWarp.
+                        // We need 2 warpReduce, like warpReduceIntermediate and warpReduceFinal (or better names)
+                      )) |> toPrivate |>
+                      warpReduce(op))) |> toLocal |> //(k/j).1.f32 where (k/j) = #warps per block
+                  join |> //(k/j).f32 where (k/j) = #warps per block
+                  padCst(0)(warpSize-(numElemsBlock/numElemsWarp))(l(0f)) |> //32.f32
+                  split(warpSize) |> //1.32.f32 in order to execute following reduction with one warp
+                  mapWarp(warpReduce(op)) |>
+                  join
+              ))
           ))
         ))
 
     }
     gen.cuKernel(deviceTest, "deviceReduceTest")
   }
+
+  // Generierter Code:
+  /*
+extern "C" __global__
+void deviceReduceTest(float* __restrict__ output, int n0, int n1, int n2, const float* __restrict__ x0, __shared__ float* __restrict__ x842){
+  /* Start of moved local vars */
+  /* End of moved local vars */
+  /* mapBlock */
+  for (int block_id_1230 = blockIdx.x;(block_id_1230 < (n0 / n1));block_id_1230 = (block_id_1230 + gridDim.x)) {
+    /* mapWarp */
+    for (int warp_id_1239 = (threadIdx.x / 32);(warp_id_1239 < (n1 / n2));warp_id_1239 = (warp_id_1239 + (blockDim.x / 32))) {
+      {
+        float x855[(((31+(n2*(1/^(((n2) / (32))))))) / (32))];
+        {
+          float x873[(((31+(n2*(1/^(((n2) / (32))))))) / (32))];
+          {
+            float x891[(((31+(n2*(1/^(((n2) / (32))))))) / (32))];
+            {
+              float x909[(((31+(n2*(1/^(((n2) / (32))))))) / (32))];
+              {
+                float x927[(((31+(n2*(1/^(((n2) / (32))))))) / (32))];
+                {
+                  float x945[(((31+(n2*(1/^(((n2) / (32))))))) / (32))];
+                  {
+                    float x953[(((31+(n2*(1/^(((n2) / (32))))))) / (32))];
+                    /* mapLane */
+                    for (int lane_id_1289 = (threadIdx.x % 32);(lane_id_1289 < (n2 / (n2 / 32)));lane_id_1289 = (32 + lane_id_1289)) {
+                      /* oclReduceSeq */
+                      {
+                        float x965;
+                        x965 = 0.0f;
+                        for (int i_1291 = 0;(i_1291 < (n2 / 32));i_1291 = (1 + i_1291)) {
+                          x965 = (x965 + x0[(((i_1291 + (block_id_1230 * n1)) + (lane_id_1289 * (n2 / 32))) + (n2 * warp_id_1239))]);
+                        }
+
+                        x953[(lane_id_1289 / 32)] = x965;
+                      }
+
+                    }
+
+                    /* mapLane */
+                    for (int lane_id_1290 = (threadIdx.x % 32);(lane_id_1290 < (n2 / (n2 / 32)));lane_id_1290 = (32 + lane_id_1290)) {
+                      x945[(lane_id_1290 / 32)] = x953[(lane_id_1290 / 32)];
+                    }
+
+                  }
+
+                  /* mapLane */
+                  for (int lane_id_1288 = (threadIdx.x % 32);(lane_id_1288 < (n2 / (n2 / 32)));lane_id_1288 = (32 + lane_id_1288)) {
+                    x927[(lane_id_1288 / 32)] = (x945[(lane_id_1288 / 32)] + x945[(lane_id_1288 / 32)]);
+                  }
+
+                }
+
+                /* mapLane */
+                for (int lane_id_1285 = (threadIdx.x % 32);(lane_id_1285 < (n2 / (n2 / 32)));lane_id_1285 = (32 + lane_id_1285)) {
+                  x909[(lane_id_1285 / 32)] = (x927[(lane_id_1285 / 32)] + x927[(lane_id_1285 / 32)]);
+                }
+
+              }
+
+              /* mapLane */
+              for (int lane_id_1281 = (threadIdx.x % 32);(lane_id_1281 < (n2 / (n2 / 32)));lane_id_1281 = (32 + lane_id_1281)) {
+                x891[(lane_id_1281 / 32)] = (x909[(lane_id_1281 / 32)] + x909[(lane_id_1281 / 32)]);
+              }
+
+            }
+
+            /* mapLane */
+            for (int lane_id_1276 = (threadIdx.x % 32);(lane_id_1276 < (n2 / (n2 / 32)));lane_id_1276 = (32 + lane_id_1276)) {
+              x873[(lane_id_1276 / 32)] = (x891[(lane_id_1276 / 32)] + x891[(lane_id_1276 / 32)]);
+            }
+
+          }
+
+          /* mapLane */
+          for (int lane_id_1270 = (threadIdx.x % 32);(lane_id_1270 < (n2 / (n2 / 32)));lane_id_1270 = (32 + lane_id_1270)) {
+            x855[(lane_id_1270 / 32)] = (x873[(lane_id_1270 / 32)] + x873[(lane_id_1270 / 32)]);
+          }
+
+        }
+
+        /* mapLane */
+        for (int lane_id_1263 = (threadIdx.x % 32);(lane_id_1263 < 1);lane_id_1263 = (32 + lane_id_1263)) {
+          x842[(lane_id_1263 + warp_id_1239)] = x855[0];
+        }
+
+      }
+
+    }
+
+    /* mapWarp */
+    for (int warp_id_1247 = (threadIdx.x / 32);(warp_id_1247 < ((1 + ((-1 * (n1 / n2)) / 32)) + (n1 / (n2 * 32))));warp_id_1247 = (warp_id_1247 + (blockDim.x / 32))) {
+      {
+        float x663[1];
+        {
+          float x681[1];
+          {
+            float x699[1];
+            {
+              float x717[1];
+              {
+                float x735[1];
+                {
+                  float x753[1];
+                  /* mapLane */
+                  /* iteration count is exactly 1, no loop emitted */
+                  int lane_id_1324 = (threadIdx.x % 32);
+                  x753[0] = ((((lane_id_1324 + (32 * warp_id_1247)) < (n1 / n2))) ? (x842[(lane_id_1324 + (32 * warp_id_1247))]) : (0.0f));
+                  /* mapLane */
+                  /* iteration count is exactly 1, no loop emitted */
+                  int lane_id_1325 = (threadIdx.x % 32);
+                  x735[0] = (x753[0] + x753[0]);
+                }
+
+                /* mapLane */
+                /* iteration count is exactly 1, no loop emitted */
+                int lane_id_1323 = (threadIdx.x % 32);
+                x717[0] = (x735[0] + x735[0]);
+              }
+
+              /* mapLane */
+              /* iteration count is exactly 1, no loop emitted */
+              int lane_id_1320 = (threadIdx.x % 32);
+              x699[0] = (x717[0] + x717[0]);
+            }
+
+            /* mapLane */
+            /* iteration count is exactly 1, no loop emitted */
+            int lane_id_1316 = (threadIdx.x % 32);
+            x681[0] = (x699[0] + x699[0]);
+          }
+
+          /* mapLane */
+          /* iteration count is exactly 1, no loop emitted */
+          int lane_id_1311 = (threadIdx.x % 32);
+          x663[0] = (x681[0] + x681[0]);
+        }
+
+        /* mapLane */
+        for (int lane_id_1305 = (threadIdx.x % 32);(lane_id_1305 < 1);lane_id_1305 = (32 + lane_id_1305)) {
+          output[((((block_id_1230 + lane_id_1305) + warp_id_1247) + (((-1 * block_id_1230) * (n1 / n2)) / 32)) + ((block_id_1230 * n1) / (n2 * 32)))] = x663[0];
+        }
+
+      }
+
+    }
+
+  }
+
+  __syncthreads();
+}
+   */
 
   //deprecated
   test("test reduce kernel"){
