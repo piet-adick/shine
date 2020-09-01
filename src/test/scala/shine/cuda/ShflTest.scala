@@ -1,20 +1,27 @@
 package shine.cuda
 
-import shine.DPIA.NatIdentifier
+import rise.core.primitives.Split
+import shine.DPIA.{Nat, NatIdentifier}
 import shine.DPIA.Phrases._
+import shine.DPIA.Types.DataType.idx
 import shine.DPIA.Types._
-import shine.cuda.primitives.functional.ShflDown
+import shine.cuda.primitives.functional._
 
 class ShflTest extends shine.test_util.Tests {
 
   test("ShflDown test") {
-    val arr = Identifier("arr", ExpType(ArrayType(32, f32), read))
+    val in = Identifier("arr", ExpType(ArrayType(32, f32), read))
+    val srcLanes = Identifier("arr", ExpType(ArrayType(32, idx(32:Nat)), read))
     val delta = NatIdentifier("delta")
-    val x = Identifier("x", ExpType(ArrayType(32, f32), read))
+
+    //split(32) |> mapWarp(fun(x => x |> split(1) |> toPrivateFun(mapLane(id)) |> let(fun(x => zip(x, Shfl(x)))) |> toPrivateFun(mapLane(addOp)))
+
     val shflDownTest =
       DepLambda[NatKind](delta)(
-        Lambda(arr,
-          ShflDown(f32, delta, x)
+        Lambda(in,
+          Lambda(srcLanes,
+            ShflWarp(f32, srcLanes , in)
+          )
         )
       )
 

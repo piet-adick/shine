@@ -4,53 +4,44 @@ import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases.VisitAndRebuild.Visitor
 import shine.DPIA.Phrases._
-import shine.DPIA.Semantics.OperationalSemantics.{Data, Store}
+import shine.DPIA.Semantics.OperationalSemantics.{Data, IndexData, Store}
 import shine.DPIA.Types._
 import shine.DPIA.Types.DataType._
 import shine.DPIA._
+import shine.cuda.primitives.imperative.ShflDownWarpSync
 
 import scala.xml.Elem
 
-final case class ShflXor(
+final case class ShflDownWarp(
   dt: ScalarType,
-  mask: Phrase[ExpType],
+  delta: Nat,
   in: Phrase[ExpType]
 )
   extends ExpPrimitive
 {
-  mask :: expT(idx(32:Nat), read)
   in :: expT((32:Nat)`.`dt, read)
   override val t: ExpType = expT((32:Nat)`.`dt, read)
 
   override def visitAndRebuild(f: Visitor): Phrase[ExpType] =
-    Shfl(f.data(dt), VisitAndRebuild(mask, f), VisitAndRebuild(in, f))
-
-  override def eval(s: Store): Data = ???
+    ShflDownWarp(f.data(dt), delta, VisitAndRebuild(in, f))
 
   override def prettyPrint: String = ???
 
-  override def xmlPrinter: Elem = ???
-
   def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommType] =
-    {
-      import shine.DPIA.Compilation.TranslationToImperative._
-      con(mask)(λ(expT(idx(32:Nat), read))(maskImp =>
-        con(in)(λ(expT((32:Nat)`.`dt, read))(inImp =>
-          A :=|((32:Nat)`.`dt)|ShflXor(dt, maskImp,inImp)
-        ))
-      ))
-    }
+                         (implicit context: TranslationContext): Phrase[CommType] = ???
 
   def continuationTranslation(C: Phrase[ExpType ->: CommType])
                              (implicit context: TranslationContext): Phrase[CommType] =
     {
       import shine.DPIA.Compilation.TranslationToImperative._
-      con(mask)(λ(expT(idx(32:Nat), read))(maskImp =>
-        con(in)(λ(expT((32:Nat)`.`dt, read))(inImp =>
-          C(ShflXor(dt, maskImp,inImp))
-        ))
+      con(in)(λ(expT((32:Nat)`.`dt, read))(inImp =>
+        C(ShflDownWarpSync(0xFFFFFFFF, dt, delta, inImp`@`Literal(IndexData(0, 1))))
       ))
     }
+
+
+  override def eval(s: Store): Data = ???
+
+  override def xmlPrinter: Elem = ???
 
 }

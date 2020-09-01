@@ -89,7 +89,7 @@ class ReduceTest extends shine.test_util.Tests {
         ))
 
     }
-    gen.cuKernel(deviceTest, "deviceReduceTest")
+    gen.cuKernel(deviceTest(2048)(1024)(64), "deviceReduceTest")
   }
 
   // Generierter Code:

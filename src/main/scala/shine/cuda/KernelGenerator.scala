@@ -139,7 +139,7 @@ class KernelGenerator(
   }
 
   private def checkTypes(p: Phrase[ExpType]): Phrase[ExpType] = {
-    xmlPrinter.writeToFile("/tmp/p1.xml", p)
+    //xmlPrinter.writeToFile("/tmp/p1.xml", p)
     TypeCheck(p)
     p
   }
