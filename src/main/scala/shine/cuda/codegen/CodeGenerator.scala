@@ -40,7 +40,13 @@ class CodeGenerator(override val decls: CCodeGen.Declarations,
         throw new Exception(
           "New without address space found in OpenCL program.")
 
-      case SyncThreads() => cuda.ast.Synchronize()
+      case SyncThreads() => cuda.ast.SynchronizeThreads()
+
+      case SyncWarp() =>cuda.ast.SynchronizeWarp()
+
+      case SyncPipeline(pipe) =>
+        exp(pipe, env, Nil, pipe =>
+          C.AST.ExprStmt(C.AST.StructMemberAccess(pipe, C.AST.DeclRef("commit_and_wait()"))))
 
       case _ => super.cmd(phrase, env)
     }

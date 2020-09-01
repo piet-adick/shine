@@ -14,9 +14,14 @@ case class VarDecl(override val name: String,
     cuda.ast.VarDecl(name, v(t), addressSpace, init.map(VisitAndRebuild(_, v)))
 }
 
-case class Synchronize() extends Stmt {
-  override def visitAndRebuild(v: VisitAndRebuild.Visitor): Synchronize = this
+case class SynchronizeThreads() extends Stmt {
+  override def visitAndRebuild(v: VisitAndRebuild.Visitor): SynchronizeThreads = this
 
-  override def visitAndGenerateStmt(v: VisitAndGenerateStmt.Visitor): Stmt =
-    this
+  override def visitAndGenerateStmt(v: VisitAndGenerateStmt.Visitor): Stmt = this
+}
+
+case class SynchronizeWarp() extends Stmt {
+  override def visitAndRebuild(v: VisitAndRebuild.Visitor): SynchronizeWarp = this
+
+  override def visitAndGenerateStmt(v: VisitAndGenerateStmt.Visitor): Stmt = this
 }

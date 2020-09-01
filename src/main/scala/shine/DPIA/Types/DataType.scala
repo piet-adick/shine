@@ -12,6 +12,8 @@ sealed trait BasicType extends DataType
 
 sealed trait ScalarType extends BasicType
 
+object pipeline extends BasicType { override def toString = "pipeline" }
+
 object bool extends ScalarType { override def toString: String = "bool" }
 
 object int extends ScalarType { override def toString: String = "int" }
@@ -148,7 +150,7 @@ object DataType {
     case VectorType(size, _) => size
     case ArrayType(size, _) => size
     case DepArrayType(size, _) => size
-    case _: DataTypeIdentifier | _: NatToDataApply =>
+    case _ =>
       throw new Exception("This should not happen")
   }
 

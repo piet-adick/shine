@@ -1,6 +1,5 @@
 package shine.cuda
 
-import rise.core.primitives.Split
 import shine.DPIA.{Nat, NatIdentifier}
 import shine.DPIA.Phrases._
 import shine.DPIA.Types.DataType.idx

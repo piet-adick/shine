@@ -5,7 +5,6 @@ import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.Phrases.{ExpPrimitive, Phrase, VisitAndRebuild}
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics.Store
-import shine.DPIA.Types.DataType.idx
 import shine.DPIA.Types._
 
 import scala.xml.Elem
