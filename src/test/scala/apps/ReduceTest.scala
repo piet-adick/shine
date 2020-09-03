@@ -25,13 +25,17 @@ class ReduceTest extends shine.test_util.Tests {
     gen.cuKernel(blockTest, "blockReduceTest")
   }
 
+
+
   val warpSize = 32
+  val srcLanes = generate(fun(IndexType(warpSize))(i => i))
+
   private val id = fun(x => x)
   private def warpReduce(op: Expr): Expr = {
     fun(warpChunk =>
       warpChunk |>
         toPrivateFun(mapLane(id)) |> //32.f32
-        let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+        let(fun(x => zip(x, x |> shflWarp(srcLanes)))) |> //32.(f32 x f32)
         toPrivateFun(mapLane(op)) |> //32.f32
         let(fun(x => zip(x, x))) |> //32.(f32 x f32)
         toPrivateFun(mapLane(op)) |> //32.f32

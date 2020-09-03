@@ -8,7 +8,7 @@ import shine.DPIA.Semantics.OperationalSemantics.{Data, IndexData, Store}
 import shine.DPIA.Types._
 import shine.DPIA.Types.DataType._
 import shine.DPIA._
-import shine.cuda.laneId
+import shine.{cuda => c}
 import shine.cuda.primitives.imperative.ShflWarpSync
 
 import scala.xml.Elem
@@ -20,9 +20,11 @@ final case class ShflWarp(
 )
   extends ExpPrimitive
 {
-  srcLanes :: expT((32:Nat)`.`idx(32:Nat), read)
-  in :: expT((32:Nat)`.`dt, read)
-  override val t: ExpType = expT((32:Nat)`.`dt, read)
+  val warpSize: Nat = c.warpSize
+
+  srcLanes :: expT(warpSize`.`idx(warpSize), read)
+  in :: expT(warpSize`.`dt, read)
+  override val t: ExpType = expT(warpSize`.`dt, read)
 
   override def visitAndRebuild(f: Visitor): Phrase[ExpType] =
     ShflWarp(f.data(dt), VisitAndRebuild(srcLanes, f), VisitAndRebuild(in, f))
@@ -39,7 +41,7 @@ final case class ShflWarp(
       import shine.DPIA.Compilation.TranslationToImperative._
       con(srcLanes)(λ(expT((32:Nat)`.`idx(32:Nat), read))(srcLanesImp =>
         con(in)(λ(expT((32:Nat)`.`dt, read))(inImp =>
-          C(ShflWarpSync(0xFFFFFFFF, dt, srcLanesImp`@`laneId('x'), inImp`@`Literal(IndexData(0, 1))))
+          C(ShflWarpSync(0xFFFFFFFF, dt, srcLanesImp`@`c.laneId('x'), inImp`@`Literal(IndexData(0, 1))))
         ))
       ))
     }

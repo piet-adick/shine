@@ -10,6 +10,7 @@ import shine.cuda.primitives.imperative._
 import shine.DPIA.DSL._
 import shine.DPIA.ImperativePrimitives._
 import shine.DPIA.Phrases._
+import shine.DPIA.Semantics.OperationalSemantics.NatData
 import shine.DPIA.Types._
 import shine.DPIA._
 
@@ -49,6 +50,20 @@ class CodeGenerator(override val decls: CCodeGen.Declarations,
           C.AST.ExprStmt(C.AST.StructMemberAccess(pipe, C.AST.DeclRef("commit_and_wait()"))))
 
       case _ => super.cmd(phrase, env)
+    }
+  }
+
+  override def exp(phrase: Phrase[ExpType],
+                   env: Environment,
+                   path: Path,
+                   cont: Expr => Stmt): Stmt = {
+    phrase match {
+      case ShflWarpSync(mask, _, srcLane, value) => {
+        val cudaShflSync = "__shfl_sync"
+        val args = List(Literal(NatData(mask)), value, srcLane)
+        CCodeGen.codeGenForeignCall(cudaShflSync, args, env, path, cont)
+      }
+      case _ => super.exp(phrase, env, path, cont)
     }
   }
 
