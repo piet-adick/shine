@@ -760,6 +760,19 @@ object fromRise {
           fun[ExpType](expT(a, write), e =>
             To(as, a, e)))
 
+      case (cuda.ShflWarp(),
+        lt.FunType(lt.ArrayType(size, lt.IndexType(_)),
+        lt.FunType(lt.ArrayType(_, dtIn: lt.ScalarType), _)))
+        =>
+        val dt = scalarType(dtIn)
+        fun[ExpType](
+          expT(ArrayType(size, IndexType(size)), read), srcLanes =>
+          fun[ExpType](
+            expT(ArrayType(size, dt), read), inArr =>
+              ShflWarp(dt, srcLanes, inArr)
+          )
+        )
+
       case (core.Reduce(), _) =>
         throw new Exception(s"$p has no implementation")
 

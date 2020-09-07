@@ -28,14 +28,14 @@ class ReduceTest extends shine.test_util.Tests {
 
 
   val warpSize = 32
-  //val srcLanes = generate(fun(IndexType(warpSize))(i => i))
+  val srcLanes = generate(fun(IndexType(warpSize))(i => i))
 
   private val id = fun(x => x)
   private def warpReduce(op: Expr): Expr = {
     fun(warpChunk =>
       warpChunk |>
         toPrivateFun(mapLane(id)) |> //32.f32
-        let(fun(x => zip(x, x |> shflDownWarp(16)))) |> //32.(f32 x f32)
+        let(fun(x => zip(x, x |> shflWarp(srcLanes)))) |> //32.(f32 x f32)
         toPrivateFun(mapLane(op)) |> //32.f32
         let(fun(x => zip(x, x))) |> //32.(f32 x f32)
         toPrivateFun(mapLane(op)) |> //32.f32
@@ -72,8 +72,7 @@ class ReduceTest extends shine.test_util.Tests {
               mapBlock('x')(fun(chunk =>
                 chunk |> split(numElemsWarp) |> // numElemsBlock/numElemsWarp.numElemsWarp.f32
                   mapWarp('x')(fun(warpChunk =>
-                    // TODO: delete this TODO - use assume that numElemsWarp divides numElemsBlock here (i.e., use /^)
-                    warpChunk |> split(numElemsWarp/^warpSize) |> // warpSize.numElemsWarp/warpSize.f32
+                    warpChunk |> split(numElemsWarp /^ warpSize) |> // warpSize.numElemsWarp/warpSize.f32
                       //TODO: what should we call this
                       //FIXME: fuse this and warpReduce into a single mapLane
                       mapLane(fun(threadChunk =>
@@ -85,7 +84,6 @@ class ReduceTest extends shine.test_util.Tests {
                       )) |> toPrivate |>
                       warpReduce(op))) |> toLocal |> //(k/j).1.f32 where (k/j) = #warps per block
                   join |> //(k/j).f32 where (k/j) = #warps per block
-                  // TODO: delete this TODO - use assume that numElemsWarp divides numElemsBlock here (i.e., use /^)
                   padCst(0)(warpSize-(numElemsBlock /^ numElemsWarp))(l(0f)) |> //32.f32
                   split(warpSize) |> //1.32.f32 in order to execute following reduction with one warp
                   mapWarp(warpReduce(op)) |>
