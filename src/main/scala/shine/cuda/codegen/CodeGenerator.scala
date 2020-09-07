@@ -63,6 +63,11 @@ class CodeGenerator(override val decls: CCodeGen.Declarations,
         val args = List(Literal(NatData(mask)), value, srcLane)
         CCodeGen.codeGenForeignCall(cudaShflSync, args, env, path, cont)
       }
+      case ShflDownWarpSync(mask, _, delta, value) => {
+        val cudaShflDownSync = "__shfl_down_sync"
+        val args = List(Literal(NatData(mask)), value, Literal(NatData(delta)))
+        CCodeGen.codeGenForeignCall(cudaShflDownSync, args, env, path, cont)
+      }
       case _ => super.exp(phrase, env, path, cont)
     }
   }

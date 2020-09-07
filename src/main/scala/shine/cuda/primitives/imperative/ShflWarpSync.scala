@@ -12,7 +12,7 @@ import shine.DPIA.Types._
 import scala.xml.Elem
 
 final case class ShflWarpSync(
-  mask : Nat,
+  mask: Nat,
   dt: ScalarType,
   srcLane: Phrase[ExpType],
   value: Phrase[ExpType]
@@ -20,6 +20,7 @@ final case class ShflWarpSync(
 
   srcLane :: expT(idx(32:Nat), read)
   value :: expT(dt, read)
+
   override val t: ExpType = expT(dt, read)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] =

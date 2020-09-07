@@ -39,8 +39,8 @@ final case class ShflWarp(
                              (implicit context: TranslationContext): Phrase[CommType] =
     {
       import shine.DPIA.Compilation.TranslationToImperative._
-      con(srcLanes)(λ(expT((32:Nat)`.`idx(32:Nat), read))(srcLanesImp =>
-        con(in)(λ(expT((32:Nat)`.`dt, read))(inImp =>
+      con(srcLanes)(λ(expT(warpSize`.`idx(warpSize), read))(srcLanesImp =>
+        con(in)(λ(expT(warpSize`.`dt, read))(inImp =>
           C(ShflWarpSync(0xFFFFFFFF, dt, srcLanesImp`@`c.laneId('x'), inImp`@`Literal(IndexData(0, 1))))
         ))
       ))
