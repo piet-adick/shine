@@ -76,9 +76,9 @@ object HoistMemoryAllocations {
                   performRewrite(oldVariable, oldBody, i, n)
               case AddressSpace.Local =>
                 parallelismLevel match {
-                  case OpenCL.Local | OpenCL.Sequential =>
+                  case OpenCL.Lane | OpenCL.Local | OpenCL.Sequential =>
                     performRewrite(oldVariable, oldBody, i, n)
-                  case OpenCL.WorkGroup => // do not perform the substitution
+                  case OpenCL.Warp | OpenCL.WorkGroup => // do not perform the substitution
                     (oldVariable, oldBody)
                   case OpenCL.Global =>
                     throw new Exception("This should not happen")

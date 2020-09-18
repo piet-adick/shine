@@ -3,6 +3,7 @@ package shine.cuda.codegen
 import arithexpr.arithmetic
 import arithexpr.arithmetic._
 import shine.C.AST.Decl
+import shine.C.CodeGeneration.CodeGenerator.CIntExpr
 import shine._
 import shine.C.CodeGeneration.{CodeGenerator => CCodeGen}
 import shine.OpenCL.CodeGeneration.{CodeGenerator => OclCodeGen}
@@ -10,10 +11,12 @@ import shine.cuda.primitives.imperative._
 import shine.DPIA.DSL._
 import shine.DPIA.ImperativePrimitives._
 import shine.DPIA.Phrases._
-import shine.DPIA.Semantics.OperationalSemantics.NatData
+import shine.DPIA.Semantics.OperationalSemantics.{ArrayData, NatData}
 import shine.DPIA.Types._
 import shine.DPIA._
+import shine.cuda.primitives.functional.ShflWarp
 
+import scala.collection.immutable.VectorBuilder
 import scala.collection.{immutable, mutable}
 
 object CodeGenerator {
@@ -58,10 +61,12 @@ class CodeGenerator(override val decls: CCodeGen.Declarations,
                    path: Path,
                    cont: Expr => Stmt): Stmt = {
     phrase match {
-      case ShflWarpSync(mask, _, srcLane, value) => {
+      case ShflWarp(_, srcLane, in) => {
         val cudaShflSync = "__shfl_sync"
-        val args = List(Literal(NatData(mask)), value, srcLane)
-        CCodeGen.codeGenForeignCall(cudaShflSync, args, env, path, cont)
+        val args = List(
+//          Literal(ArrayData(Vector.fill(cuda.warpSize)(0xFFFFFFFF))),
+          in, srcLane)
+        codeGenSfhlSyncCall(cudaShflSync, collection.Seq(C.AST.Literal("0xFFFFFFFF")), args, env, path, cont)
       }
       case ShflDownWarpSync(mask, _, delta, value) => {
         val cudaShflDownSync = "__shfl_down_sync"
@@ -70,6 +75,26 @@ class CodeGenerator(override val decls: CCodeGen.Declarations,
       }
       case _ => super.exp(phrase, env, path, cont)
     }
+  }
+
+  def codeGenSfhlSyncCall(name: String,
+                          preConstArgs: collection.Seq[Expr],
+                          args: collection.Seq[Phrase[ExpType]],
+                          env: Environment,
+                          args_ps: Path,
+                          cont: Expr => Stmt): Stmt =
+  {
+    def iter(args: collection.Seq[Phrase[ExpType]], res: VectorBuilder[Expr]): Stmt = {
+      //noinspection VariablePatternShadow
+      args match {
+        case a +: args =>
+          exp(a, env, args_ps, a => iter(args, res += a))
+        case _ => cont(
+          C.AST.FunCall(C.AST.DeclRef(name), res.result()))
+      }
+    }
+
+    iter(args, new VectorBuilder() ++= preConstArgs)
   }
 
   protected object CudaCodeGen {

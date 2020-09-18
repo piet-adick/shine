@@ -4,12 +4,11 @@ import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases.VisitAndRebuild.Visitor
 import shine.DPIA.Phrases._
-import shine.DPIA.Semantics.OperationalSemantics.{Data, IndexData, Store}
+import shine.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import shine.DPIA.Types._
 import shine.DPIA.Types.DataType._
 import shine.DPIA._
 import shine.{cuda => c}
-import shine.cuda.primitives.imperative.ShflWarpSync
 
 import scala.xml.Elem
 
@@ -41,7 +40,7 @@ final case class ShflWarp(
       import shine.DPIA.Compilation.TranslationToImperative._
       con(srcLanes)(λ(expT(warpSize`.`idx(warpSize), read))(srcLanesImp =>
         con(in)(λ(expT(warpSize`.`dt, read))(inImp =>
-          C(ShflWarpSync(0xFFFFFFFF, dt, srcLanesImp`@`c.laneId('x'), inImp`@`Literal(IndexData(0, 1))))
+          C(ShflWarp(dt, srcLanesImp, inImp))
         ))
       ))
     }
@@ -49,6 +48,6 @@ final case class ShflWarp(
 
   override def eval(s: Store): Data = ???
 
-  override def xmlPrinter: Elem = ???
+  override def xmlPrinter: Elem = <shflWarp />
 
 }

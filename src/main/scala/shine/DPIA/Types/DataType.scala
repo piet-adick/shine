@@ -12,6 +12,7 @@ sealed trait BasicType extends DataType
 
 sealed trait ScalarType extends BasicType
 
+// TODO talk about this. What is this and why is it needed?
 object pipeline extends BasicType { override def toString = "pipeline" }
 
 object bool extends ScalarType { override def toString: String = "bool" }

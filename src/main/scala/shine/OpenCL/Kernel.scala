@@ -307,7 +307,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
     case ArrayType(_, elemType) => getOutputType(elemType)
     case DepArrayType(_, NatToDataLambda(_, elemType)) =>
       getOutputType(elemType)
-    case DepArrayType(_, _) | _: NatToDataApply =>
+    case DepArrayType(_, _) | _: NatToDataApply | _: BasicType =>
       throw new Exception("This should not happen")
   }
 
@@ -337,6 +337,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
       }
     case _: NatToDataApply =>  throw new Exception("This should not happen")
     case _: DataTypeIdentifier => throw new Exception("This should not happen")
+    case _: BasicType => throw new Exception("Only needed because of the pipline type.")
   }
 
   case class SizeInByte(value: Nat) {

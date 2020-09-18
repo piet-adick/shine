@@ -35,19 +35,19 @@ class ReduceTest extends shine.test_util.Tests {
     fun(warpChunk =>
       warpChunk |>
         toPrivateFun(mapLane(id)) |> //32.f32
-        let(fun(x => zip(x, x |> shflWarp(srcLanes)))) |> //32.(f32 x f32)
-        toPrivateFun(mapLane(op)) |> //32.f32
-        let(fun(x => zip(x, x))) |> //32.(f32 x f32)
-        toPrivateFun(mapLane(op)) |> //32.f32
-        let(fun(x => zip(x, x))) |> //32.(f32 x f32)
-        toPrivateFun(mapLane(op)) |> //32.f32
-        let(fun(x => zip(x, x))) |> //32.(f32 x f32)
-        toPrivateFun(mapLane(op)) |> //32.f32
-        let(fun(x => zip(x, x))) |> //32.(f32 x f32)
-        toPrivateFun(mapLane(op)) |> //32.f32
-        // Take the SUBarray consisting of 1 element(s) starting from
-        // the beginning of the array.
-        take(1) |> //1.f32
+        let(fun(x => x |> shflWarp(srcLanes))) |> //32.(f32 x f32)
+//        toPrivateFun(mapLane(op)) |> //32.f32
+//        let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+//        toPrivateFun(mapLane(op)) |> //32.f32
+//        let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+//        toPrivateFun(mapLane(op)) |> //32.f32
+//        let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+//        toPrivateFun(mapLane(op)) |> //32.f32
+//        let(fun(x => zip(x, x))) |> //32.(f32 x f32)
+//        toPrivateFun(mapLane(op)) |> //32.f32
+//        // Take the SUBarray consisting of 1 element(s) starting from
+//        // the beginning of the array.
+//        take(1) |> //1.f32
         // Map id over the array to say that the copying the result out is a lane specific
         // and not warp specific operation.
         // We cannot retunr f32 with idx, because this access would be executed by the entire warp.
