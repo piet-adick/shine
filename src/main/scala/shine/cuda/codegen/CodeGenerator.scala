@@ -63,9 +63,7 @@ class CodeGenerator(override val decls: CCodeGen.Declarations,
     phrase match {
       case ShflWarp(_, srcLane, in) => {
         val cudaShflSync = "__shfl_sync"
-        val args = List(
-//          Literal(ArrayData(Vector.fill(cuda.warpSize)(0xFFFFFFFF))),
-          in, srcLane)
+        val args = List(in, srcLane)
         codeGenSfhlSyncCall(cudaShflSync, collection.Seq(C.AST.Literal("0xFFFFFFFF")), args, env, path, cont)
       }
       case ShflDownWarpSync(mask, _, delta, value) => {
