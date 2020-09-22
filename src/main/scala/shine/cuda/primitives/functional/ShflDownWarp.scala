@@ -4,13 +4,11 @@ import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases.VisitAndRebuild.Visitor
 import shine.DPIA.Phrases._
-import shine.DPIA.Semantics.OperationalSemantics.{Data, IndexData, Store}
+import shine.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import shine.DPIA.Types._
 import shine.DPIA.Types.DataType._
 import shine.DPIA._
 import shine.{cuda => c}
-import shine.cuda.primitives.imperative.ShflDownWarpSync
-
 import scala.xml.Elem
 
 final case class ShflDownWarp(
@@ -36,16 +34,15 @@ final case class ShflDownWarp(
 
   def continuationTranslation(C: Phrase[ExpType ->: CommType])
                              (implicit context: TranslationContext): Phrase[CommType] =
-    {
-      import shine.DPIA.Compilation.TranslationToImperative._
+  {
+    import shine.DPIA.Compilation.TranslationToImperative._
       con(in)(λ(expT(warpSize`.`dt, read))(inImp =>
-        C(ShflDownWarpSync(0xFFFFFFFF, dt, delta, inImp`@`Literal(IndexData(0, 1))))
-      ))
-    }
-
+        C(ShflDownWarp(dt, delta, inImp))
+    ))
+  }
 
   override def eval(s: Store): Data = ???
 
-  override def xmlPrinter: Elem = ???
+  override def xmlPrinter: Elem = <shflDownWarp />
 
 }
