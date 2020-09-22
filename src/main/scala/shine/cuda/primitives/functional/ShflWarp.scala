@@ -9,7 +9,6 @@ import shine.DPIA.Types._
 import shine.DPIA.Types.DataType._
 import shine.DPIA._
 import shine.{cuda => c}
-
 import scala.xml.Elem
 
 final case class ShflWarp(
