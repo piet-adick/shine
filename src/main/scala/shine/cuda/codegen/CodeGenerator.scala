@@ -3,7 +3,6 @@ package shine.cuda.codegen
 import arithexpr.arithmetic
 import arithexpr.arithmetic._
 import shine.C.AST.Decl
-import shine.C.CodeGeneration.CodeGenerator.CIntExpr
 import shine._
 import shine.C.CodeGeneration.{CodeGenerator => CCodeGen}
 import shine.OpenCL.CodeGeneration.{CodeGenerator => OclCodeGen}
@@ -11,7 +10,6 @@ import shine.cuda.primitives.imperative._
 import shine.DPIA.DSL._
 import shine.DPIA.ImperativePrimitives._
 import shine.DPIA.Phrases._
-import shine.DPIA.Semantics.OperationalSemantics.{ArrayData, NatData}
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.cuda.primitives.functional.{ShflDownWarp, ShflWarp}

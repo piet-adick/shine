@@ -35,15 +35,15 @@ class ReduceTest extends shine.test_util.Tests {
     fun(warpChunk =>
       warpChunk |>
         toPrivateFun(mapLane(id)) |> //32.f32
-        let(fun(x => zip(x, x |> shflWarp(srcLanes)))) |> //32.(f32 x f32)
+        let(fun(x => zip(x, x |> shflDownWarp(16)))) |> //32.(f32 x f32)
         toPrivateFun(mapLane(op)) |> //32.f32
-        let(fun(x => zip(x, x |> shflWarp(srcLanes)))) |> //32.(f32 x f32)
+        let(fun(x => zip(x, x |> shflDownWarp(8)))) |> //32.(f32 x f32)
         toPrivateFun(mapLane(op)) |> //32.f32
-        let(fun(x => zip(x, x |> shflWarp(srcLanes)))) |> //32.(f32 x f32)
+        let(fun(x => zip(x, x |> shflDownWarp(4)))) |> //32.(f32 x f32)
         toPrivateFun(mapLane(op)) |> //32.f32
-        let(fun(x => zip(x, x |> shflWarp(srcLanes)))) |> //32.(f32 x f32)
+        let(fun(x => zip(x, x |> shflDownWarp(2)))) |> //32.(f32 x f32)
         toPrivateFun(mapLane(op)) |> //32.f32
-        let(fun(x => zip(x, x |> shflWarp(srcLanes)))) |> //32.(f32 x f32)
+        let(fun(x => zip(x, x |> shflDownWarp(1)))) |> //32.(f32 x f32)
         toPrivateFun(mapLane(op)) |> //32.f32
         // Take the SUBarray consisting of 1 element(s) starting from
         // the beginning of the array.
