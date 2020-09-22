@@ -14,7 +14,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics.{ArrayData, NatData}
 import shine.DPIA.Types._
 import shine.DPIA._
-import shine.cuda.primitives.functional.ShflWarp
+import shine.cuda.primitives.functional.{ShflDownWarp, ShflWarp}
 
 import scala.collection.immutable.VectorBuilder
 import scala.collection.{immutable, mutable}
@@ -64,15 +64,30 @@ class CodeGenerator(override val decls: CCodeGen.Declarations,
       case ShflWarp(_, srcLane, in) => {
         val cudaShflSync = "__shfl_sync"
         val args = List(in, srcLane)
-        codeGenSfhlSyncCall(cudaShflSync, collection.Seq(C.AST.Literal("0xFFFFFFFF")), args, env, path, cont)
+        // TODO add C.AST.Literal as mask attribute to primitives
+        codeGenSfhlSyncCall(
+          cudaShflSync, collection.Seq(C.AST.Literal("0xFFFFFFFF")), args, env, path, cont)
       }
-      case ShflDownWarpSync(mask, _, delta, value) => {
+      case ShflDownWarp(_, shiftDelta, in) => {
         val cudaShflDownSync = "__shfl_down_sync"
-        val args = List(Literal(NatData(mask)), value, Literal(NatData(delta)))
-        CCodeGen.codeGenForeignCall(cudaShflDownSync, args, env, path, cont)
+        codeGenShflDirectionCall(
+          cudaShflDownSync, C.AST.Literal("0xFFFFFFFF"), in, shiftDelta, env, path, cont)
       }
       case _ => super.exp(phrase, env, path, cont)
     }
+  }
+
+  def codeGenShflDirectionCall(
+    name: String,
+    mask: C.AST.Literal,
+    in: Phrase[ExpType],
+    shiftDelta: Nat,
+    env: Environment,
+    args_ps: Path,
+    cont: Expr => Stmt
+ ): Stmt = {
+    exp(in, env, args_ps, in => cont(
+      C.AST.FunCall(C.AST.DeclRef(name), collection.Seq(mask, in, C.AST.ArithmeticExpr(shiftDelta)))))
   }
 
   def codeGenSfhlSyncCall(name: String,
