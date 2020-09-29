@@ -1,16 +1,11 @@
 package shine.cuda
 
-import arithexpr.arithmetic.ArithExpr
 import shine.C.AST.Node
 import shine.DPIA.Phrases.Identifier
 import shine.DPIA.Types._
 import shine.DPIA.{Nat, VarType}
 import shine.C
 import shine.OpenCL.{GlobalSize, LocalSize, NDRange, get_global_size, get_local_size, get_num_groups}
-import yacx.{ByteArg, DoubleArg, FloatArg, HalfArg, IntArg, LongArg, Program, ShortArg}
-
-import scala.collection.Seq
-import scala.collection.immutable.List
 
 //TODO: this class needs to be refatored
 //noinspection ScalaDocParserErrorInspection
@@ -18,6 +13,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
                   kernel: C.AST.FunDecl, //TODO
                   outputParam: Identifier[AccType],
                   inputParams: Seq[Identifier[ExpType]],
+                  dynamicSharedMemory: Long,
                   intermediateParams: Seq[Identifier[VarType]],
                   printer: Node => String
                  ) extends util.Kernel(decls, kernel, outputParam, inputParams, intermediateParams, printer) {
@@ -44,22 +40,54 @@ case class Kernel(decls: Seq[C.AST.Decl],
   }
 
   override protected def execute(localSize: LocalSize, globalSize: GlobalSize, sizeVarMapping: Map[Nat, Nat], kernelArgs: List[KernelArg]): Double = {
-    val kernel = Program.create(code, this.kernel.name).compile()
+    val kernel = Program.create(code, this.kernel.name).compile(Options.createOptions(compilerOptions:_*))
 
     val kernelArgsCUDA = kernelArgs.map(_.asInstanceOf[KernelArgCUDA].kernelArg)
 
-    val runtime = kernel.launch(
-      ArithExpr.substitute(localSize.size.x, sizeVarMapping).eval,
-      ArithExpr.substitute(localSize.size.y, sizeVarMapping).eval,
-      ArithExpr.substitute(localSize.size.z, sizeVarMapping).eval,
-      ArithExpr.substitute(globalSize.size.x, sizeVarMapping).eval,
-      ArithExpr.substitute(globalSize.size.y, sizeVarMapping).eval,
-      ArithExpr.substitute(globalSize.size.z, sizeVarMapping).eval,
-      kernelArgsCUDA.toArray: _*
+    val blocksX = ArithExpr.substitute(globalSize.size.x /^ localSize.size.x, sizeVarMapping).eval
+    val blocksY = ArithExpr.substitute(globalSize.size.y /^ localSize.size.y, sizeVarMapping).eval
+    val blocksZ = ArithExpr.substitute(globalSize.size.z /^ localSize.size.z, sizeVarMapping).eval
+    val threadsX = ArithExpr.substitute(globalSize.size.x, sizeVarMapping).eval
+    val threadsY = ArithExpr.substitute(globalSize.size.y, sizeVarMapping).eval
+    val threadsZ = ArithExpr.substitute(globalSize.size.z, sizeVarMapping).eval
+
+    val device = Devices.findDevice()
+    println(device)
+
+    println(s"Allocated dynamicSharedMemory $dynamicSharedMemory bytes")
+    if (device.getSharedMemPerMultiprocessor < dynamicSharedMemory)
+      throw new OutOfMemoryError(s"not enough shared memory! found: $dynamicSharedMemory available: <= ${Devices.findDevice().getSharedMemPerMultiprocessor}")
+
+    println(s"Launch kernel with gridDim=($blocksX, $blocksY, $blocksZ), blockDim=($threadsX, $threadsY, $threadsZ)")
+    val maxBlocks = device.getMaxGrid
+    val maxThreads = device.getMaxBlock
+    if (blocksX > maxBlocks(0) || blocksY > maxBlocks(1) || blocksZ > maxBlocks(2))
+      throw new IndexOutOfBoundsException(s"not enough blocks! found: ($blocksX, $blocksY, $blocksZ)" +
+        s"available: <= (${maxBlocks(0)}, ${maxBlocks(1)}, ${maxBlocks(2)})")
+    if (threadsX > maxThreads(0) || threadsY > maxThreads(1) || threadsZ > maxThreads(2))
+      throw new IndexOutOfBoundsException(s"not enough threads per block! found: ($blocksX, $blocksY, $blocksZ)" +
+        s"available: <= (${maxThreads(0)}, ${maxThreads(1)}, ${maxThreads(2)})")
+
+
+    kernel.configure(
+      blocksX,
+      blocksY,
+      blocksZ,
+      threadsX,
+      threadsY,
+      threadsZ,
+      dynamicSharedMemory
     )
 
-    runtime.getLaunch().asInstanceOf[Double]
+
+    val runtime = kernel.launch(kernelArgsCUDA.toArray: _*)
+
+    kernel.dispose()
+
+    runtime.getLaunch.asInstanceOf[Double]
   }
+
+  protected def dispose(kernelArgs: List[KernelArg]): Unit =  kernelArgs.foreach(_.asInstanceOf[KernelArgCUDA].kernelArg.dispose())
 
   //TODO
   //no implemented yet (reserve shared memory?)
