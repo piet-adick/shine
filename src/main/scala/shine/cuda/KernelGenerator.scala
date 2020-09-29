@@ -9,12 +9,10 @@ import shine.DPIA.{LetNatIdentifier, Lifting}
 import shine.DPIA.Phrases.{Apply, DepApply, DepLambda, Identifier, Lambda, LetNat, Phrase, xmlPrinter}
 import shine.DPIA.Types.{AccType, BasePhraseTypes, CommType, ExpType, NatKind, PhraseType, TypeCheck, int, read}
 import shine.OpenCL.AST.RequiredWorkGroupSize
-import shine.cuda.codegen.HoistMemoryAllocations
 import shine.cuda.codegen.{AdaptKernelBody, HoistMemoryAllocations}
 import shine.OpenCL.CodeGeneration.HoistMemoryAllocations.AllocationInfo
-import shine.OpenCL.CodeGeneration.{AdaptKernelBody, AdaptKernelParameters}
 import shine.OpenCL.CodeGeneration.AdaptKernelParameters
-import shine.OpenCL.{FlagPrivateArrayLoops, GlobalSize, LocalSize}
+import shine.OpenCL.{FlagPrivateArrayLoops, GlobalSize, InjectWorkItemSizes, LocalSize}
 import shine.{C, OpenCL, cuda}
 
 import scala.collection.{Map, Seq}

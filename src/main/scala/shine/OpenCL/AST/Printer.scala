@@ -79,7 +79,7 @@ class Printer extends shine.C.AST.CPrinter {
   }
 
   private def printVarDecl(v: VarDecl): Unit = {
-    if (v.addressSpace != AddressSpace.Private) print(s"${v.addressSpace} ")
+    if (v.addressSpace != AddressSpace.Private) print(s"${toString(v.addressSpace)} ")
     if (v.t.const) print("const ")
     v.t match {
       case b: BasicType => print(s"${b.name} ${v.name}")

@@ -1,9 +1,11 @@
 package shine.cuda.codegen
 
+import arithexpr.arithmetic.ArithExpr.Math.Min
 import shine.DPIA.DSL._
 import shine.DPIA.ImperativePrimitives._
 import shine.DPIA.Phrases.{VisitAndRebuild, _}
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 import shine.OpenCL.CodeGeneration.HoistMemoryAllocations.AllocationInfo
 import shine.OpenCL.ImperativePrimitives.{OpenCLNew, OpenCLParFor, OpenCLParForNat}

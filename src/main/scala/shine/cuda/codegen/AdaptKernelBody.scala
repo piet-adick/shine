@@ -1,8 +1,12 @@
 package shine.cuda.codegen
 
+import arithexpr.arithmetic.{IfThenElse => _}
 import shine.C.AST.{Nodes, _}
 import shine.DPIA.Types.AddressSpace
+import shine.cuda.ast.ExternArrayType
 import shine.{C, OpenCL}
+
+import scala.collection.mutable
 
 //TODO smiliar to OpenCl-AdaptKernelBody
 object AdaptKernelBody {
