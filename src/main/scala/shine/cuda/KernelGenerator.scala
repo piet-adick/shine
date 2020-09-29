@@ -9,9 +9,12 @@ import shine.DPIA.{LetNatIdentifier, Lifting}
 import shine.DPIA.Phrases.{Apply, DepApply, DepLambda, Identifier, Lambda, LetNat, Phrase, xmlPrinter}
 import shine.DPIA.Types.{AccType, BasePhraseTypes, CommType, ExpType, NatKind, PhraseType, TypeCheck, int, read}
 import shine.OpenCL.AST.RequiredWorkGroupSize
+import shine.cuda.codegen.HoistMemoryAllocations
+import shine.cuda.codegen.{AdaptKernelBody, HoistMemoryAllocations}
 import shine.OpenCL.CodeGeneration.HoistMemoryAllocations.AllocationInfo
-import shine.OpenCL.CodeGeneration.{AdaptKernelBody, AdaptKernelParameters, HoistMemoryAllocations}
-import shine.OpenCL.{FlagPrivateArrayLoops, GlobalSize, InjectWorkItemSizes, LocalSize}
+import shine.OpenCL.CodeGeneration.{AdaptKernelBody, AdaptKernelParameters}
+import shine.OpenCL.CodeGeneration.AdaptKernelParameters
+import shine.OpenCL.{FlagPrivateArrayLoops, GlobalSize, LocalSize}
 import shine.{C, OpenCL, cuda}
 
 import scala.collection.{Map, Seq}
@@ -115,14 +118,17 @@ class KernelGenerator(
               val typeDeclarations =
                 C.ProgramGenerator.collectTypeDeclarations(code, kernelParams)
 
+              val (body, dynamicSharedMemory) = adaptKernelBody(C.AST.Block(Seq(code)))
+
               val cuKernel = cuda.Kernel(typeDeclarations ++ declarations,
                 kernel = makeKernelFunction(
                   name,
                   kernelParams,
-                  adaptKernelBody(C.AST.Block(Seq(code))),
+                  body,
                   localSize),
                 outputParam = outParam,
                 inputParams = inputParams,
+                dynamicSharedMemory,
                 intermediateParams = intermediateAllocations.map (_.identifier),
                 printer)
 
@@ -197,7 +203,7 @@ class KernelGenerator(
   }
 
   private def adaptKernelBody(
-                               body: C.AST.Block): C.AST.Block = {
+                               body: C.AST.Block): (C.AST.Block, Long)  = {
     val pw = new PrintWriter(new File("/tmp/p6.cu"))
     try pw.write(printer(body)) finally pw.close()
     AdaptKernelBody(body)

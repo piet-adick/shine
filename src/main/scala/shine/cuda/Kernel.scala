@@ -18,6 +18,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
                   kernel: C.AST.FunDecl, //TODO
                   outputParam: Identifier[AccType],
                   inputParams: Seq[Identifier[ExpType]],
+                  dynamicSharedMemory: Long,
                   intermediateParams: Seq[Identifier[VarType]],
                   printer: Node => String
                  ) extends util.Kernel(decls, kernel, outputParam, inputParams, intermediateParams, printer) {
@@ -48,18 +49,30 @@ case class Kernel(decls: Seq[C.AST.Decl],
 
     val kernelArgsCUDA = kernelArgs.map(_.asInstanceOf[KernelArgCUDA].kernelArg)
 
-    val runtime = kernel.launch(
-      ArithExpr.substitute(localSize.size.x, sizeVarMapping).eval,
-      ArithExpr.substitute(localSize.size.y, sizeVarMapping).eval,
-      ArithExpr.substitute(localSize.size.z, sizeVarMapping).eval,
+    println(s"Allocated dynamicSharedMemory $dynamicSharedMemory bytes")
+
+    if (Devices.findDevice().getSharedMemPerMultiprocessor < dynamicSharedMemory)
+      throw new OutOfMemoryError(s"not enough shared memory found: $dynamicSharedMemory available: <= ${Devices.findDevice().getSharedMemPerMultiprocessor}")
+
+    kernel.configure(
+      ArithExpr.substitute(globalSize.size.x /^ localSize.size.x, sizeVarMapping).eval,
+      ArithExpr.substitute(globalSize.size.y /^ localSize.size.y, sizeVarMapping).eval,
+      ArithExpr.substitute(globalSize.size.z /^ localSize.size.z, sizeVarMapping).eval,
       ArithExpr.substitute(globalSize.size.x, sizeVarMapping).eval,
       ArithExpr.substitute(globalSize.size.y, sizeVarMapping).eval,
       ArithExpr.substitute(globalSize.size.z, sizeVarMapping).eval,
       kernelArgsCUDA.toArray: _*
+    dynamicSharedMemory
     )
+
+    val runtime = kernel.launch(kernelArgsCUDA.toArray: _*)
+
+    kernel.dispose()
 
     runtime.getLaunch().asInstanceOf[Double]
   }
+
+  protected def dispose(kernelArgs: List[KernelArg]): Unit =  kernelArgs.foreach(_.asInstanceOf[KernelArgCUDA].kernelArg.dispose())
 
   //TODO
   //no implemented yet (reserve shared memory?)

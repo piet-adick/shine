@@ -37,6 +37,16 @@ class Printer extends shine.OpenCL.AST.Printer {
     printStmt(k.body)
   }
 
+  override def printDecl(d: Decl): Unit = {
+    d match {
+      case v: shine.OpenCL.AST.VarDecl if v.t.isInstanceOf[ExternArrayType] =>
+        print("extern ")
+      case _ =>
+    }
+
+    super.printDecl(d)
+  }
+
   override def printParamDecl(p: ParamDecl): Unit = {
     if (p.t.const) print("const ")
     p.t match {
