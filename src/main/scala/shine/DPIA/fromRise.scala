@@ -774,14 +774,14 @@ object fromRise {
         )
 
       case (cuda.ShflDownWarp(),
-        lt.DepFunType(delta: lt.NatIdentifier,
+        lt.DepFunType(shiftDelta: lt.NatIdentifier,
         lt.FunType(lt.ArrayType(size , dtIn: lt.ScalarType), _)))
         =>
         val dt = scalarType(dtIn)
-        DepLambda[NatKind](natIdentifier(delta))(
+        DepLambda[NatKind](natIdentifier(shiftDelta))(
           fun[ExpType](
             expT(ArrayType(size, dt), read), inArr =>
-              ShflDownWarp(dt, delta, inArr)
+              ShflDownWarp(dt, shiftDelta, inArr)
           )
         )
 

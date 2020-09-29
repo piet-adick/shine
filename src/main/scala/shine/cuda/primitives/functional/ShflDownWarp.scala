@@ -24,7 +24,7 @@ final case class ShflDownWarp(
   override val t: ExpType = expT((32:Nat)`.`dt, read)
 
   override def visitAndRebuild(f: Visitor): Phrase[ExpType] =
-    ShflDownWarp(f.data(dt), delta, VisitAndRebuild(in, f))
+    ShflDownWarp(f.data(dt), f.nat(delta), VisitAndRebuild(in, f))
 
   override def prettyPrint: String =
     s"ShflDownWarp($delta, ${PrettyPhrasePrinter(in)}"

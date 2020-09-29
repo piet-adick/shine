@@ -44,7 +44,7 @@ class CodeGenerator(override val decls: CCodeGen.Declarations,
 
       case SyncThreads() => cuda.ast.SynchronizeThreads()
 
-      case SyncWarp() =>cuda.ast.SynchronizeWarp()
+      case SyncWarp() => cuda.ast.SynchronizeWarp()
 
       case SyncPipeline(pipe) =>
         exp(pipe, env, Nil, pipe =>
