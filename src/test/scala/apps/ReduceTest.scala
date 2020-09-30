@@ -9,23 +9,6 @@ import rise.core.types._
 import util.gen
 
 class ReduceTest extends shine.test_util.Tests {
-  test("block reduce test"){
-    val blockTest = {
-
-      val op = fun(f32 x f32)(t => t._1 + t._2)
-
-      // reduceBlock: (n: nat) -> n.f32 -> n/32.f32, where n % 32 = 0
-      nFun(n => fun(n `.` f32)(arr =>
-        arr |> //32.f32
-          split(warpSize) |>
-          mapWarp(warpReduce(op)) |> //n/32.1.f32
-          join // n/32.f32, where n/32 == #warps
-      ))
-    }
-    gen.cuKernel(blockTest, "blockReduceTest")
-  }
-
-
 
   val warpSize = 32
   val srcLanes = generate(fun(IndexType(warpSize))(i => i ))
@@ -93,165 +76,334 @@ class ReduceTest extends shine.test_util.Tests {
         ))
 
     }
-    gen.cuKernel(deviceTest(2048)(1024)(32), "deviceReduceTest")
+    //64 blocks, 32 warps each; 32 elems per lane
+    gen.cuKernel(deviceTest(2097152)(32768)(1024), "deviceReduceGenerated")
+    gen.cuKernel(deviceTest(64)(64)(32), "deviceReduceGeneratedFinal")
   }
 
   // Generierter Code:
   /*
 extern "C" __global__
-void deviceReduceTest(float* __restrict__ output, const float* __restrict__ x0, __shared__ float* __restrict__ x906){
-  /* Start of moved local vars */
-  /* End of moved local vars */
+void deviceReduceTest(float* __restrict__ output, const float* __restrict__ x0){
+  extern __shared__ char dynamicSharedMemory1417[];
   /* mapBlock */
-  for (int block_id_1304 = blockIdx.x;(block_id_1304 < 2);block_id_1304 = (block_id_1304 + gridDim.x)) {
-    /* mapWarp */
-    for (int warp_id_1313 = (threadIdx.x / 32);(warp_id_1313 < 32);warp_id_1313 = (warp_id_1313 + (blockDim.x / 32))) {
-      {
-        float x919[1];
+  for (int block_id_1304 = blockIdx.x;(block_id_1304 < 72);block_id_1304 = (block_id_1304 + gridDim.x)) {
+    {
+      float* x906 = ((float*)(&(dynamicSharedMemory1417[0])));
+      /* mapWarp */
+      for (int warp_id_1330 = (threadIdx.x / 32);(warp_id_1330 < 32);warp_id_1330 = (warp_id_1330 + (blockDim.x / 32))) {
         {
-          float x939[1];
+          float x919[1];
           {
-            float x959[1];
+            float x939[1];
             {
-              float x979[1];
+              float x959[1];
               {
-                float x999[1];
+                float x979[1];
                 {
-                  float x1019[1];
+                  float x999[1];
                   {
-                    float x1027[1];
-                    /* mapLane */
-                    /* iteration count is exactly 1, no loop emitted */
-                    int lane_id_1363 = (threadIdx.x % 32);
-                    /* oclReduceSeq */
+                    float x1019[1];
                     {
-                      float x1039;
-                      x1039 = 0.0f;
+                      float x1027[1];
+                      /* mapLane */
                       /* iteration count is exactly 1, no loop emitted */
-                      int i_1365 = 0;
-                      x1039 = (x1039 + x0[((lane_id_1363 + (32 * warp_id_1313)) + (1024 * block_id_1304))]);
-                      x1027[0] = x1039;
+                      int lane_id_1380 = (threadIdx.x % 32);
+                      /* oclReduceSeq */
+                      {
+                        float x1039;
+                        x1039 = 0.0f;
+                        for (int i_1382 = 0;(i_1382 < 32);i_1382 = (1 + i_1382)) {
+                          x1039 = (x1039 + x0[(((i_1382 + (32 * lane_id_1380)) + (1024 * warp_id_1330)) + (32768 * block_id_1304))]);
+                        }
+
+                        x1027[0] = x1039;
+                      }
+
+                      __syncwarp();
+                      /* mapLane */
+                      /* iteration count is exactly 1, no loop emitted */
+                      int lane_id_1381 = (threadIdx.x % 32);
+                      x1019[0] = x1027[0];
+                      __syncwarp();
                     }
 
-                    __syncwarp()
                     /* mapLane */
                     /* iteration count is exactly 1, no loop emitted */
-                    int lane_id_1364 = (threadIdx.x % 32);
-                    x1019[0] = x1027[0];
-                    __syncwarp()
+                    int lane_id_1379 = (threadIdx.x % 32);
+                    x999[0] = (x1019[0] + __shfl_down_sync(0xFFFFFFFF, x1019[0], 16));
+                    __syncwarp();
                   }
 
                   /* mapLane */
                   /* iteration count is exactly 1, no loop emitted */
-                  int lane_id_1362 = (threadIdx.x % 32);
-                  x999[0] = (x1019[0] + __shfl_down_sync(0xFFFFFFFF, x1019[0], n460));
-                  __syncwarp()
+                  int lane_id_1376 = (threadIdx.x % 32);
+                  x979[0] = (x999[0] + __shfl_down_sync(0xFFFFFFFF, x999[0], 8));
+                  __syncwarp();
                 }
 
                 /* mapLane */
                 /* iteration count is exactly 1, no loop emitted */
-                int lane_id_1359 = (threadIdx.x % 32);
-                x979[0] = (x999[0] + __shfl_down_sync(0xFFFFFFFF, x999[0], n425));
-                __syncwarp()
+                int lane_id_1372 = (threadIdx.x % 32);
+                x959[0] = (x979[0] + __shfl_down_sync(0xFFFFFFFF, x979[0], 4));
+                __syncwarp();
               }
 
               /* mapLane */
               /* iteration count is exactly 1, no loop emitted */
-              int lane_id_1355 = (threadIdx.x % 32);
-              x959[0] = (x979[0] + __shfl_down_sync(0xFFFFFFFF, x979[0], n390));
-              __syncwarp()
+              int lane_id_1367 = (threadIdx.x % 32);
+              x939[0] = (x959[0] + __shfl_down_sync(0xFFFFFFFF, x959[0], 2));
+              __syncwarp();
             }
 
             /* mapLane */
             /* iteration count is exactly 1, no loop emitted */
-            int lane_id_1350 = (threadIdx.x % 32);
-            x939[0] = (x959[0] + __shfl_down_sync(0xFFFFFFFF, x959[0], n355));
-            __syncwarp()
+            int lane_id_1361 = (threadIdx.x % 32);
+            x919[0] = (x939[0] + __shfl_down_sync(0xFFFFFFFF, x939[0], 1));
+            __syncwarp();
           }
 
           /* mapLane */
-          /* iteration count is exactly 1, no loop emitted */
-          int lane_id_1344 = (threadIdx.x % 32);
-          x919[0] = (x939[0] + __shfl_down_sync(0xFFFFFFFF, x939[0], n320));
-          __syncwarp()
+          for (int lane_id_1354 = (threadIdx.x % 32);(lane_id_1354 < 1);lane_id_1354 = (32 + lane_id_1354)) {
+            x906[(lane_id_1354 + warp_id_1330)] = x919[0];
+          }
+
+          __syncwarp();
         }
 
-        /* mapLane */
-        for (int lane_id_1337 = (threadIdx.x % 32);(lane_id_1337 < 1);lane_id_1337 = (32 + lane_id_1337)) {
-          x906[(lane_id_1337 + warp_id_1313)] = x919[0];
-        }
-
-        __syncwarp()
       }
 
-    }
-
-    __syncthreads();
-    /* mapWarp */
-    for (int warp_id_1321 = (threadIdx.x / 32);(warp_id_1321 < 1);warp_id_1321 = (warp_id_1321 + (blockDim.x / 32))) {
-      {
-        float x717[1];
+      __syncthreads();
+      /* mapWarp */
+      for (int warp_id_1338 = (threadIdx.x / 32);(warp_id_1338 < 1);warp_id_1338 = (warp_id_1338 + (blockDim.x / 32))) {
         {
-          float x737[1];
+          float x717[1];
           {
-            float x757[1];
+            float x737[1];
             {
-              float x777[1];
+              float x757[1];
               {
-                float x797[1];
+                float x777[1];
                 {
-                  float x817[1];
+                  float x797[1];
+                  {
+                    float x817[1];
+                    /* mapLane */
+                    /* iteration count is exactly 1, no loop emitted */
+                    int lane_id_1415 = (threadIdx.x % 32);
+                    x817[0] = x906[(lane_id_1415 + (32 * warp_id_1338))];
+                    __syncwarp();
+                    /* mapLane */
+                    /* iteration count is exactly 1, no loop emitted */
+                    int lane_id_1416 = (threadIdx.x % 32);
+                    x797[0] = (x817[0] + __shfl_down_sync(0xFFFFFFFF, x817[0], 16));
+                    __syncwarp();
+                  }
+
                   /* mapLane */
                   /* iteration count is exactly 1, no loop emitted */
-                  int lane_id_1398 = (threadIdx.x % 32);
-                  x817[0] = x906[(lane_id_1398 + (32 * warp_id_1321))];
-                  __syncwarp()
-                  /* mapLane */
-                  /* iteration count is exactly 1, no loop emitted */
-                  int lane_id_1399 = (threadIdx.x % 32);
-                  x797[0] = (x817[0] + __shfl_down_sync(0xFFFFFFFF, x817[0], n225));
-                  __syncwarp()
+                  int lane_id_1414 = (threadIdx.x % 32);
+                  x777[0] = (x797[0] + __shfl_down_sync(0xFFFFFFFF, x797[0], 8));
+                  __syncwarp();
                 }
 
                 /* mapLane */
                 /* iteration count is exactly 1, no loop emitted */
-                int lane_id_1397 = (threadIdx.x % 32);
-                x777[0] = (x797[0] + __shfl_down_sync(0xFFFFFFFF, x797[0], n190));
-                __syncwarp()
+                int lane_id_1411 = (threadIdx.x % 32);
+                x757[0] = (x777[0] + __shfl_down_sync(0xFFFFFFFF, x777[0], 4));
+                __syncwarp();
               }
 
               /* mapLane */
               /* iteration count is exactly 1, no loop emitted */
-              int lane_id_1394 = (threadIdx.x % 32);
-              x757[0] = (x777[0] + __shfl_down_sync(0xFFFFFFFF, x777[0], n155));
-              __syncwarp()
+              int lane_id_1407 = (threadIdx.x % 32);
+              x737[0] = (x757[0] + __shfl_down_sync(0xFFFFFFFF, x757[0], 2));
+              __syncwarp();
             }
 
             /* mapLane */
             /* iteration count is exactly 1, no loop emitted */
-            int lane_id_1390 = (threadIdx.x % 32);
-            x737[0] = (x757[0] + __shfl_down_sync(0xFFFFFFFF, x757[0], n120));
-            __syncwarp()
+            int lane_id_1402 = (threadIdx.x % 32);
+            x717[0] = (x737[0] + __shfl_down_sync(0xFFFFFFFF, x737[0], 1));
+            __syncwarp();
           }
 
           /* mapLane */
-          /* iteration count is exactly 1, no loop emitted */
-          int lane_id_1385 = (threadIdx.x % 32);
-          x717[0] = (x737[0] + __shfl_down_sync(0xFFFFFFFF, x737[0], n85));
-          __syncwarp()
+          for (int lane_id_1396 = (threadIdx.x % 32);(lane_id_1396 < 1);lane_id_1396 = (32 + lane_id_1396)) {
+            output[((block_id_1304 + lane_id_1396) + warp_id_1338)] = x717[0];
+          }
+
+          __syncwarp();
         }
 
-        /* mapLane */
-        for (int lane_id_1379 = (threadIdx.x % 32);(lane_id_1379 < 1);lane_id_1379 = (32 + lane_id_1379)) {
-          output[((block_id_1304 + lane_id_1379) + warp_id_1321)] = x717[0];
-        }
-
-        __syncwarp()
       }
 
+      __syncthreads();
     }
 
-    __syncthreads();
+  }
+
+  __syncthreads();
+}
+
+
+extern "C" __global__
+void deviceReduceGeneratedFinal(float* __restrict__ output, const float* __restrict__ x0){
+  extern __shared__ char dynamicSharedMemory2800[];
+  /* mapBlock */
+  for (int block_id_2687 = blockIdx.x;(block_id_2687 < 1);block_id_2687 = (block_id_2687 + gridDim.x)) {
+    {
+      float* x2289 = ((float*)(&(dynamicSharedMemory2800[0])));
+      /* mapWarp */
+      for (int warp_id_2713 = (threadIdx.x / 32);(warp_id_2713 < 2);warp_id_2713 = (warp_id_2713 + (blockDim.x / 32))) {
+        {
+          float x2302[1];
+          {
+            float x2322[1];
+            {
+              float x2342[1];
+              {
+                float x2362[1];
+                {
+                  float x2382[1];
+                  {
+                    float x2402[1];
+                    {
+                      float x2410[1];
+                      /* mapLane */
+                      /* iteration count is exactly 1, no loop emitted */
+                      int lane_id_2763 = (threadIdx.x % 32);
+                      /* oclReduceSeq */
+                      {
+                        float x2422;
+                        x2422 = 0.0f;
+                        /* iteration count is exactly 1, no loop emitted */
+                        int i_2765 = 0;
+                        x2422 = (x2422 + x0[((lane_id_2763 + (32 * warp_id_2713)) + (64 * block_id_2687))]);
+                        x2410[0] = x2422;
+                      }
+
+                      __syncwarp();
+                      /* mapLane */
+                      /* iteration count is exactly 1, no loop emitted */
+                      int lane_id_2764 = (threadIdx.x % 32);
+                      x2402[0] = x2410[0];
+                      __syncwarp();
+                    }
+
+                    /* mapLane */
+                    /* iteration count is exactly 1, no loop emitted */
+                    int lane_id_2762 = (threadIdx.x % 32);
+                    x2382[0] = (x2402[0] + __shfl_down_sync(0xFFFFFFFF, x2402[0], 16));
+                    __syncwarp();
+                  }
+
+                  /* mapLane */
+                  /* iteration count is exactly 1, no loop emitted */
+                  int lane_id_2759 = (threadIdx.x % 32);
+                  x2362[0] = (x2382[0] + __shfl_down_sync(0xFFFFFFFF, x2382[0], 8));
+                  __syncwarp();
+                }
+
+                /* mapLane */
+                /* iteration count is exactly 1, no loop emitted */
+                int lane_id_2755 = (threadIdx.x % 32);
+                x2342[0] = (x2362[0] + __shfl_down_sync(0xFFFFFFFF, x2362[0], 4));
+                __syncwarp();
+              }
+
+              /* mapLane */
+              /* iteration count is exactly 1, no loop emitted */
+              int lane_id_2750 = (threadIdx.x % 32);
+              x2322[0] = (x2342[0] + __shfl_down_sync(0xFFFFFFFF, x2342[0], 2));
+              __syncwarp();
+            }
+
+            /* mapLane */
+            /* iteration count is exactly 1, no loop emitted */
+            int lane_id_2744 = (threadIdx.x % 32);
+            x2302[0] = (x2322[0] + __shfl_down_sync(0xFFFFFFFF, x2322[0], 1));
+            __syncwarp();
+          }
+
+          /* mapLane */
+          for (int lane_id_2737 = (threadIdx.x % 32);(lane_id_2737 < 1);lane_id_2737 = (32 + lane_id_2737)) {
+            x2289[(lane_id_2737 + warp_id_2713)] = x2302[0];
+          }
+
+          __syncwarp();
+        }
+
+      }
+
+      __syncthreads();
+      /* mapWarp */
+      for (int warp_id_2721 = (threadIdx.x / 32);(warp_id_2721 < 1);warp_id_2721 = (warp_id_2721 + (blockDim.x / 32))) {
+        {
+          float x2100[1];
+          {
+            float x2120[1];
+            {
+              float x2140[1];
+              {
+                float x2160[1];
+                {
+                  float x2180[1];
+                  {
+                    float x2200[1];
+                    /* mapLane */
+                    /* iteration count is exactly 1, no loop emitted */
+                    int lane_id_2798 = (threadIdx.x % 32);
+                    x2200[0] = ((((lane_id_2798 + (32 * warp_id_2721)) < 2)) ? (x2289[(lane_id_2798 + (32 * warp_id_2721))]) : (0.0f));
+                    __syncwarp();
+                    /* mapLane */
+                    /* iteration count is exactly 1, no loop emitted */
+                    int lane_id_2799 = (threadIdx.x % 32);
+                    x2180[0] = (x2200[0] + __shfl_down_sync(0xFFFFFFFF, x2200[0], 16));
+                    __syncwarp();
+                  }
+
+                  /* mapLane */
+                  /* iteration count is exactly 1, no loop emitted */
+                  int lane_id_2797 = (threadIdx.x % 32);
+                  x2160[0] = (x2180[0] + __shfl_down_sync(0xFFFFFFFF, x2180[0], 8));
+                  __syncwarp();
+                }
+
+                /* mapLane */
+                /* iteration count is exactly 1, no loop emitted */
+                int lane_id_2794 = (threadIdx.x % 32);
+                x2140[0] = (x2160[0] + __shfl_down_sync(0xFFFFFFFF, x2160[0], 4));
+                __syncwarp();
+              }
+
+              /* mapLane */
+              /* iteration count is exactly 1, no loop emitted */
+              int lane_id_2790 = (threadIdx.x % 32);
+              x2120[0] = (x2140[0] + __shfl_down_sync(0xFFFFFFFF, x2140[0], 2));
+              __syncwarp();
+            }
+
+            /* mapLane */
+            /* iteration count is exactly 1, no loop emitted */
+            int lane_id_2785 = (threadIdx.x % 32);
+            x2100[0] = (x2120[0] + __shfl_down_sync(0xFFFFFFFF, x2120[0], 1));
+            __syncwarp();
+          }
+
+          /* mapLane */
+          for (int lane_id_2779 = (threadIdx.x % 32);(lane_id_2779 < 1);lane_id_2779 = (32 + lane_id_2779)) {
+            output[((block_id_2687 + lane_id_2779) + warp_id_2721)] = x2100[0];
+          }
+
+          __syncwarp();
+        }
+
+      }
+
+      __syncthreads();
+    }
+
   }
 
   __syncthreads();
@@ -309,73 +461,3 @@ void deviceReduceTest(float* __restrict__ output, const float* __restrict__ x0, 
     gen.cuKernel(testKernel, "reduceTest")
   }
 }
-
-//  Generierter Code: (ohne idx(0))
- /*
-extern "C" __global__
-void reduceTest(float* __restrict__ output, const float* __restrict__ x0, __shared__ float* __restrict__ x333, __shared__ float* __restrict__ x384, __shared__ float* __restrict__ x363){
-  /* Start of moved local vars */
-  /* End of moved local vars */
-  /* mapBlock */
-  for (int block_id_494 = blockIdx.x;(block_id_494 < 4);block_id_494 = (block_id_494 + gridDim.x)) {
-    /* mapWarp */
-    for (int warp_id_497 = (threadIdx.x / 32);(warp_id_497 < 16);warp_id_497 = (warp_id_497 + (blockDim.x / 32))) {
-      /* mapLane */
-      /* iteration count is exactly 1, no loop emitted */
-      int lane_id_501 = (threadIdx.x % 32);
-      /* oclReduceSeq */
-      {
-        float x396;
-        x396 = 0.0f;
-        for (int i_503 = 0;(i_503 < 4);i_503 = (1 + i_503)) {
-          x396 = (x396 + x0[(((i_503 + (4 * lane_id_501)) + (128 * warp_id_497)) + (2048 * block_id_494))]);
-        }
-
-        x384[lane_id_501] = x396;
-      }
-
-      /* mapLane */
-      for (int lane_id_502 = (threadIdx.x % 32);(lane_id_502 < 1);lane_id_502 = (32 + lane_id_502)) {
-        /* oclReduceSeq */
-        {
-          float x377;
-          x377 = 0.0f;
-          for (int i_504 = 0;(i_504 < 32);i_504 = (1 + i_504)) {
-            x377 = (x377 + x384[(i_504 + (32 * lane_id_502))]);
-          }
-
-          x363[(lane_id_502 + warp_id_497)] = x377;
-        }
-
-      }
-
-    }
-
-    /* mapWarp */
-    for (int warp_id_500 = (threadIdx.x / 32);(warp_id_500 < 1);warp_id_500 = (warp_id_500 + (blockDim.x / 32))) {
-      /* mapLane */
-      /* iteration count is exactly 1, no loop emitted */
-      int lane_id_505 = (threadIdx.x % 32);
-      x333[lane_id_505] = ((((lane_id_505 + (32 * warp_id_500)) < 16)) ? (x363[(lane_id_505 + (32 * warp_id_500))]) : (0.0f));
-      /* mapLane */
-      for (int lane_id_506 = (threadIdx.x % 32);(lane_id_506 < 1);lane_id_506 = (32 + lane_id_506)) {
-        /* oclReduceSeq */
-        {
-          float x326;
-          x326 = 0.0f;
-          for (int i_507 = 0;(i_507 < 32);i_507 = (1 + i_507)) {
-            x326 = (x326 + x333[(i_507 + (32 * lane_id_506))]);
-          }
-
-          output[((block_id_494 + lane_id_506) + warp_id_500)] = x326;
-        }
-
-      }
-
-    }
-
-  }
-
-  __syncthreads();
-}
- */
