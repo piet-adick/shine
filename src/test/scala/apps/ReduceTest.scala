@@ -56,14 +56,9 @@ class ReduceTest extends shine.test_util.Tests {
                 chunk |> split(numElemsWarp) |> // numElemsBlock/numElemsWarp.numElemsWarp.f32
                   mapWarp('x')(fun(warpChunk =>
                     warpChunk |> split(numElemsWarp /^ warpSize) |> // warpSize.numElemsWarp/warpSize.f32
-                      //TODO: what should we call this
-                      //FIXME: fuse this and warpReduce into a single mapLane
                       mapLane(fun(threadChunk =>
                         threadChunk |>
                           oclReduceSeq(AddressSpace.Private)(add)(l(0f))
-                        //TODO: THIS was missing. but it creates an unnecessary copy, so the upper mapLane
-                        // should be inside of mapWarp in reduceWarp.
-                        // We need 2 warpReduce, like warpReduceIntermediate and warpReduceFinal (or better names)
                       )) |> toPrivate |>
                       warpReduce(op))) |> toLocal |> //(k/j).1.f32 where (k/j) = #warps per block
                   join |> //(k/j).f32 where (k/j) = #warps per block
@@ -77,21 +72,21 @@ class ReduceTest extends shine.test_util.Tests {
 
     }
     //64 blocks, 32 warps each; 32 elems per lane
-    gen.cuKernel(deviceTest(2097152)(32768)(1024), "deviceReduceGenerated")
-    gen.cuKernel(deviceTest(64)(64)(32), "deviceReduceGeneratedFinal")
+    gen.cuKernel(deviceTest(2097152)(32768)(2048), "deviceReduceGenerated")
+    gen.cuKernel(deviceTest(65536)(1024)(32), "deviceReduceGeneratedNoSeq")
   }
 
   // Generierter Code:
   /*
 extern "C" __global__
-void deviceReduceTest(float* __restrict__ output, const float* __restrict__ x0){
+void deviceReduceGenerated(float* __restrict__ output, const float* __restrict__ x0){
   extern __shared__ char dynamicSharedMemory1417[];
   /* mapBlock */
-  for (int block_id_1304 = blockIdx.x;(block_id_1304 < 72);block_id_1304 = (block_id_1304 + gridDim.x)) {
+  for (int block_id_1304 = blockIdx.x;(block_id_1304 < 64);block_id_1304 = (block_id_1304 + gridDim.x)) {
     {
       float* x906 = ((float*)(&(dynamicSharedMemory1417[0])));
       /* mapWarp */
-      for (int warp_id_1330 = (threadIdx.x / 32);(warp_id_1330 < 32);warp_id_1330 = (warp_id_1330 + (blockDim.x / 32))) {
+      for (int warp_id_1330 = (threadIdx.x / 32);(warp_id_1330 < 16);warp_id_1330 = (warp_id_1330 + (blockDim.x / 32))) {
         {
           float x919[1];
           {
@@ -113,8 +108,8 @@ void deviceReduceTest(float* __restrict__ output, const float* __restrict__ x0){
                       {
                         float x1039;
                         x1039 = 0.0f;
-                        for (int i_1382 = 0;(i_1382 < 32);i_1382 = (1 + i_1382)) {
-                          x1039 = (x1039 + x0[(((i_1382 + (32 * lane_id_1380)) + (1024 * warp_id_1330)) + (32768 * block_id_1304))]);
+                        for (int i_1382 = 0;(i_1382 < 64);i_1382 = (1 + i_1382)) {
+                          x1039 = (x1039 + x0[(((i_1382 + (64 * lane_id_1380)) + (2048 * warp_id_1330)) + (32768 * block_id_1304))]);
                         }
 
                         x1027[0] = x1039;
@@ -191,7 +186,7 @@ void deviceReduceTest(float* __restrict__ output, const float* __restrict__ x0){
                     /* mapLane */
                     /* iteration count is exactly 1, no loop emitted */
                     int lane_id_1415 = (threadIdx.x % 32);
-                    x817[0] = x906[(lane_id_1415 + (32 * warp_id_1338))];
+                    x817[0] = ((((lane_id_1415 + (32 * warp_id_1338)) < 16)) ? (x906[(lane_id_1415 + (32 * warp_id_1338))]) : (0.0f));
                     __syncwarp();
                     /* mapLane */
                     /* iteration count is exactly 1, no loop emitted */
@@ -246,16 +241,19 @@ void deviceReduceTest(float* __restrict__ output, const float* __restrict__ x0){
   __syncthreads();
 }
 
+WARNING: opencl reduce seq acceptor translation is deprecated, implicit copies might happen
+WARNING: could not eliminate variables Set(x2331, x2407, x2311, x2149, x2371, x2095, x2129, x2351, x2297, x2189, x2109, x2169, x2391)
+
 
 extern "C" __global__
-void deviceReduceGeneratedFinal(float* __restrict__ output, const float* __restrict__ x0){
+void deviceReduceGeneratedNoSeq(float* __restrict__ output, const float* __restrict__ x0){
   extern __shared__ char dynamicSharedMemory2800[];
   /* mapBlock */
-  for (int block_id_2687 = blockIdx.x;(block_id_2687 < 1);block_id_2687 = (block_id_2687 + gridDim.x)) {
+  for (int block_id_2687 = blockIdx.x;(block_id_2687 < 64);block_id_2687 = (block_id_2687 + gridDim.x)) {
     {
       float* x2289 = ((float*)(&(dynamicSharedMemory2800[0])));
       /* mapWarp */
-      for (int warp_id_2713 = (threadIdx.x / 32);(warp_id_2713 < 2);warp_id_2713 = (warp_id_2713 + (blockDim.x / 32))) {
+      for (int warp_id_2713 = (threadIdx.x / 32);(warp_id_2713 < 32);warp_id_2713 = (warp_id_2713 + (blockDim.x / 32))) {
         {
           float x2302[1];
           {
@@ -279,7 +277,7 @@ void deviceReduceGeneratedFinal(float* __restrict__ output, const float* __restr
                         x2422 = 0.0f;
                         /* iteration count is exactly 1, no loop emitted */
                         int i_2765 = 0;
-                        x2422 = (x2422 + x0[((lane_id_2763 + (32 * warp_id_2713)) + (64 * block_id_2687))]);
+                        x2422 = (x2422 + x0[((lane_id_2763 + (32 * warp_id_2713)) + (1024 * block_id_2687))]);
                         x2410[0] = x2422;
                       }
 
@@ -354,7 +352,7 @@ void deviceReduceGeneratedFinal(float* __restrict__ output, const float* __restr
                     /* mapLane */
                     /* iteration count is exactly 1, no loop emitted */
                     int lane_id_2798 = (threadIdx.x % 32);
-                    x2200[0] = ((((lane_id_2798 + (32 * warp_id_2721)) < 2)) ? (x2289[(lane_id_2798 + (32 * warp_id_2721))]) : (0.0f));
+                    x2200[0] = x2289[(lane_id_2798 + (32 * warp_id_2721))];
                     __syncwarp();
                     /* mapLane */
                     /* iteration count is exactly 1, no loop emitted */
