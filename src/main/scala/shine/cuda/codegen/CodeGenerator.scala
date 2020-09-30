@@ -12,7 +12,7 @@ import shine.DPIA.ImperativePrimitives._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
-import shine.cuda.primitives.functional.{ShflDownWarp, ShflWarp}
+import shine.cuda.primitives.functional.{ShflDownWarp, ShflUpWarp, ShflWarp, ShflXorWarp}
 
 import scala.collection.immutable.VectorBuilder
 import scala.collection.{immutable, mutable}
@@ -70,6 +70,16 @@ class CodeGenerator(override val decls: CCodeGen.Declarations,
         val cudaShflDownSync = "__shfl_down_sync"
         codeGenShflDirectionCall(
           cudaShflDownSync, C.AST.Literal("0xFFFFFFFF"), in, shiftDelta, env, path, cont)
+      }
+      case ShflUpWarp(_, shiftDelta, in) => {
+        val cudaShflUpSync = "__shfl_up_sync"
+        codeGenShflDirectionCall(
+          cudaShflUpSync, C.AST.Literal("0xFFFFFFFF"), in, shiftDelta, env, path, cont)
+      }
+      case ShflXorWarp(_, laneMask, in) => {
+        val cudaShflXorSync = "__shfl_xor_sync"
+        codeGenShflDirectionCall(
+          cudaShflXorSync, C.AST.Literal("0xFFFFFFFF"), in, laneMask, env, path, cont)
       }
       case _ => super.exp(phrase, env, path, cont)
     }

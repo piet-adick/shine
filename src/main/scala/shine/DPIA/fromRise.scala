@@ -785,6 +785,31 @@ object fromRise {
           )
         )
 
+      case (cuda.ShflUpWarp(),
+      lt.DepFunType(shiftDelta: lt.NatIdentifier,
+      lt.FunType(lt.ArrayType(size , dtIn: lt.ScalarType), _)))
+      =>
+        val dt = scalarType(dtIn)
+        DepLambda[NatKind](natIdentifier(shiftDelta))(
+          fun[ExpType](
+            expT(ArrayType(size, dt), read), inArr =>
+              ShflUpWarp(dt, shiftDelta, inArr)
+          )
+        )
+
+      case (cuda.ShflXorWarp(),
+      lt.DepFunType(shiftDelta: lt.NatIdentifier,
+      lt.FunType(lt.ArrayType(size , dtIn: lt.ScalarType), _)))
+      =>
+        val dt = scalarType(dtIn)
+        DepLambda[NatKind](natIdentifier(shiftDelta))(
+          fun[ExpType](
+            expT(ArrayType(size, dt), read), inArr =>
+              ShflXorWarp(dt, shiftDelta, inArr)
+          )
+        )
+
+
       case (core.Reduce(), _) =>
         throw new Exception(s"$p has no implementation")
 
