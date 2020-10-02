@@ -3,6 +3,7 @@ package apps
 import rise.cuda.DSL._
 import rise.OpenCL.DSL.{oclReduceSeq, toLocal, toPrivate, toPrivateFun}
 import rise.core.DSL._
+import rise.core.HighLevelConstructs.reorderWithStride
 import rise.core._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
@@ -42,47 +43,63 @@ class ReduceTest extends shine.test_util.Tests {
     )
   }
 
-  private def blockReduce(op: Expr): Expr = {
-    fun(blockChunk =>
-      blockChunk |> split(warpSize) |>
-        mapWarp('x')(fun(warpChunk =>
-          warpChunk |>
-            mapLane('x')(fun(laneVal =>
-              laneVal |> id
-            )) |>
-            toPrivate |>
-            warpReduce(op)
-        )) |>
-          toLocal |>
-          join |>
-          //padCst(0)(warpSize-(blockDim /^ warpSize))(l(0f)) |>
-          split(warpSize) |>
-          mapWarp(warpReduce(op)) |>
-          join
-    )
-  }
-
-  test("device reduce test2"){
+  test("block reduce w/o reduceSeq"){
     val deviceTest = {
 
       val op = fun(f32 x f32)(t => t._1 + t._2)
 
       // reduceDevice: (n: nat) -> n.f32 -> n/numElemsBlock.f32, where n % numElemsBlock = 0
-      nFun((n, elemsSeq) =>
-          fun(n `.` f32)(arr =>
-            arr |> split(elemsSeq) |>
-              mapGlobal('x')(fun(seqChunk =>
-                seqChunk |>
-                  oclReduceSeq(AddressSpace.Private)(add)(l(0f))
-              )) |>
-              padCst(0)(1023-n%1024)(l(0f)) |>
-              split(1024) |> // n/numElemsBlock.numElemsBlock.f32
-              mapBlock('x')(blockReduce(op))
-          )
+      nFun(n =>
+        fun(n `.` f32)(blockChunk =>
+          blockChunk |> split(warpSize) |>
+            mapWarp('x')(fun(warpChunk =>
+              warpChunk |>
+                mapLane('x')(id) |>
+                toPrivate |>
+                warpReduce(op)
+            )) |>
+            toLocal |>
+            join |>
+            padCst(0)(warpSize-(n /^ warpSize))(l(0f)) |>
+            split(warpSize) |>
+            mapWarp(warpReduce(op)) |>
+            join
+        )
       )
     }
     //64 blocks, 32 warps each; 32 elems per lane
-    gen.cuKernel(deviceTest(2097152)(32), "deviceReduceGenerated")
+    gen.cuKernel(deviceTest(1024), "blockReduceGenerated")
+  }
+
+  test("device reduce test3"){
+    val deviceTest = {
+
+      val op = fun(f32 x f32)(t => t._1 + t._2)
+
+      // reduceDevice: (n: nat) -> n.f32 -> n/numElemsBlock.f32, where n % numElemsBlock = 0
+      nFun((n, numElemsBlock, numElemsWarp) =>
+        fun(n `.` f32)(arr =>
+          arr |> split(numElemsBlock) |> // n/numElemsBlock.numElemsBlock.f32
+            mapBlock('x')(fun(blockChunk =>
+              blockChunk |> split(numElemsWarp /^ warpSize) |>
+                mapThreads('x')(fun(threadChunk =>
+                threadChunk |>
+                  oclReduceSeq(AddressSpace.Private)(add)(l(0f))
+                  )) |>
+                toPrivate |>
+                split(warpSize) |>
+                mapWarp(warpReduce(op)) |>
+                toLocal |> //(k/j).1.f32 where (k/j) = #warps per block
+                join |> //(k/j).f32 where (k/j) = #warps per block
+                padCst(0)(warpSize-(numElemsBlock /^ numElemsWarp))(l(0f)) |> //32.f32
+                split(warpSize) |> //1.32.f32 in order to execute following reduction with one warp
+                mapWarp(warpReduce(op)) |>
+                join
+            ))
+        ))
+    }
+    //64 blocks, 32 warps each; 32 elems per lane
+    gen.cuKernel(deviceTest(2097152)(32768)(1024), "deviceReduceGenerated")
   }
 
   test("device reduce test"){
@@ -93,7 +110,8 @@ class ReduceTest extends shine.test_util.Tests {
       // reduceDevice: (n: nat) -> n.f32 -> n/numElemsBlock.f32, where n % numElemsBlock = 0
       nFun((n, numElemsBlock, numElemsWarp) =>
         fun(n `.` f32)(arr =>
-          arr |> split(numElemsBlock) |> // n/numElemsBlock.numElemsBlock.f32
+          arr |> reorderWithStride(128) |>
+            split(numElemsBlock) |> // n/numElemsBlock.numElemsBlock.f32
             mapBlock('x')(fun(chunk =>
               chunk |> split(numElemsWarp) |> // numElemsBlock/numElemsWarp.numElemsWarp.f32
                 mapWarp('x')(fun(warpChunk =>
@@ -112,7 +130,7 @@ class ReduceTest extends shine.test_util.Tests {
         ))
     }
     //64 blocks, 32 warps each; 32 elems per lane
-    gen.cuKernel(deviceTest(2097152)(32768)(2048), "deviceReduceGenerated")
+    gen.cuKernel(deviceTest(2097152)(32768)(1024), "deviceReduceGenerated")
   }
 
   // Generierter Code:
@@ -279,57 +297,172 @@ void deviceReduceGenerated(float* __restrict__ output, const float* __restrict__
 
   __syncthreads();
 }
-
    */
 
-  //deprecated
-  test("test reduce kernel"){
-    val testKernel = {
-      val n = 8192
-      val k = 2048
-      val j = 128
-      val redop = add
+  //Generierter Code mit Coalescing
+  /*
+  extern "C" __global__
+void deviceReduceGenerated(float* __restrict__ output, const float* __restrict__ x0){
+  extern __shared__ char dynamicSharedMemory1521[];
+  /* mapBlock */
+  for (int block_id_1408 = blockIdx.x;(block_id_1408 < 64);block_id_1408 = (block_id_1408 + gridDim.x)) {
+    {
+      float* x991 = ((float*)(&(dynamicSharedMemory1521[0])));
+      /* mapWarp */
+      for (int warp_id_1434 = (threadIdx.x / 32);(warp_id_1434 < 32);warp_id_1434 = (warp_id_1434 + (blockDim.x / 32))) {
+        {
+          float x1004[1];
+          {
+            float x1024[1];
+            {
+              float x1044[1];
+              {
+                float x1064[1];
+                {
+                  float x1084[1];
+                  {
+                    float x1104[1];
+                    {
+                      float x1112[1];
+                      /* mapLane */
+                      /* iteration count is exactly 1, no loop emitted */
+                      int lane_id_1484 = (threadIdx.x % 32);
+                      /* oclReduceSeq */
+                      {
+                        float x1124;
+                        x1124 = 0.0f;
+                        for (int i_1486 = 0;(i_1486 < 32);i_1486 = (1 + i_1486)) {
+                          x1124 = (x1124 + x0[(((((i_1486 + (32 * lane_id_1484)) + (1024 * warp_id_1434)) / 16384) + (2 * block_id_1408)) + (128 * (((i_1486 + (32 * lane_id_1484)) + (1024 * warp_id_1434)) % 16384)))]);
+                        }
 
-      val id = fun(x => x)
+                        x1112[0] = x1124;
+                      }
 
-      // max block size in cuda ist 1024 threads (also 32 warps)
+                      __syncwarp();
+                      /* mapLane */
+                      /* iteration count is exactly 1, no loop emitted */
+                      int lane_id_1485 = (threadIdx.x % 32);
+                      x1104[0] = x1112[0];
+                      __syncwarp();
+                    }
 
-      // idx(0) für f32 als Rückgabe ist schöner, da kein join nach reduceWarp erforderlich
-      // für Implementierung mit shfl wäre dies sowieso erforderlich, da sonst 32.f32 als Rückgabe
-      // funktioniert jedoch nicht
-      // Fehlermeldung:
-      //  rise.core.types.InferenceException was thrown.
-      //  inference exception: expected a dependent function type, but got (idx[_n18] -> (_n18._dt19 -> _dt19))
-      val reduceWarp = fun((32 `.` f32) ->: (1 `.` f32))(arr =>
-        arr |>
-          split(32) |>
-          mapLane('x')(fun(result =>
-            result |>
-              oclReduceSeq(AddressSpace.Private)(redop)(l(0f))
-          )) //|> idx(0)
-      )
+                    /* mapLane */
+                    /* iteration count is exactly 1, no loop emitted */
+                    int lane_id_1483 = (threadIdx.x % 32);
+                    x1084[0] = (x1104[0] + __shfl_down_sync(0xFFFFFFFF, x1104[0], 16));
+                    __syncwarp();
+                  }
 
-      fun(n `.` f32)(arr =>
-        arr |> split(k) |> // n/k.k.f32
-          mapBlock('x')(fun(chunk =>
-            chunk |> split(j) |> // k/j.j.f32
-              mapWarp('x')(fun(warpChunk =>
-                warpChunk |> split(j/32) |> // 32.j/32.f32
-                  mapLane(fun(threadChunk =>
-                    threadChunk |>
-                      oclReduceSeq(AddressSpace.Private)(redop)(l(0f)))) |> // 32.f32
-                  // toLocal |> // eigentlich im private memory lassen wegen shfl
-                  reduceWarp)) |> join |> // k/j.f32
-              toLocal |>
-              padCst(0)(32-(k/j))(l(0f)) |> // padde um 32-#Warps viele Elemente um auf 32 zu kommen
-              split(32) |>
-              mapWarp(fun(warpChunk =>
-                warpChunk |>
-                  //mapLane(id) |> // für toLocal erforderlich
-                  toPrivateFun(mapLane(id)) |> // eigentlich toPrivate wegen shfl
-                  reduceWarp)) |> join )))
+                  /* mapLane */
+                  /* iteration count is exactly 1, no loop emitted */
+                  int lane_id_1480 = (threadIdx.x % 32);
+                  x1064[0] = (x1084[0] + __shfl_down_sync(0xFFFFFFFF, x1084[0], 8));
+                  __syncwarp();
+                }
+
+                /* mapLane */
+                /* iteration count is exactly 1, no loop emitted */
+                int lane_id_1476 = (threadIdx.x % 32);
+                x1044[0] = (x1064[0] + __shfl_down_sync(0xFFFFFFFF, x1064[0], 4));
+                __syncwarp();
+              }
+
+              /* mapLane */
+              /* iteration count is exactly 1, no loop emitted */
+              int lane_id_1471 = (threadIdx.x % 32);
+              x1024[0] = (x1044[0] + __shfl_down_sync(0xFFFFFFFF, x1044[0], 2));
+              __syncwarp();
+            }
+
+            /* mapLane */
+            /* iteration count is exactly 1, no loop emitted */
+            int lane_id_1465 = (threadIdx.x % 32);
+            x1004[0] = (x1024[0] + __shfl_down_sync(0xFFFFFFFF, x1024[0], 1));
+            __syncwarp();
+          }
+
+          /* mapLane */
+          for (int lane_id_1458 = (threadIdx.x % 32);(lane_id_1458 < 1);lane_id_1458 = (32 + lane_id_1458)) {
+            x991[(lane_id_1458 + warp_id_1434)] = x1004[0];
+          }
+
+          __syncwarp();
+        }
+
+      }
+
+      __syncthreads();
+      /* mapWarp */
+      for (int warp_id_1442 = (threadIdx.x / 32);(warp_id_1442 < 1);warp_id_1442 = (warp_id_1442 + (blockDim.x / 32))) {
+        {
+          float x802[1];
+          {
+            float x822[1];
+            {
+              float x842[1];
+              {
+                float x862[1];
+                {
+                  float x882[1];
+                  {
+                    float x902[1];
+                    /* mapLane */
+                    /* iteration count is exactly 1, no loop emitted */
+                    int lane_id_1519 = (threadIdx.x % 32);
+                    x902[0] = x991[(lane_id_1519 + (32 * warp_id_1442))];
+                    __syncwarp();
+                    /* mapLane */
+                    /* iteration count is exactly 1, no loop emitted */
+                    int lane_id_1520 = (threadIdx.x % 32);
+                    x882[0] = (x902[0] + __shfl_down_sync(0xFFFFFFFF, x902[0], 16));
+                    __syncwarp();
+                  }
+
+                  /* mapLane */
+                  /* iteration count is exactly 1, no loop emitted */
+                  int lane_id_1518 = (threadIdx.x % 32);
+                  x862[0] = (x882[0] + __shfl_down_sync(0xFFFFFFFF, x882[0], 8));
+                  __syncwarp();
+                }
+
+                /* mapLane */
+                /* iteration count is exactly 1, no loop emitted */
+                int lane_id_1515 = (threadIdx.x % 32);
+                x842[0] = (x862[0] + __shfl_down_sync(0xFFFFFFFF, x862[0], 4));
+                __syncwarp();
+              }
+
+              /* mapLane */
+              /* iteration count is exactly 1, no loop emitted */
+              int lane_id_1511 = (threadIdx.x % 32);
+              x822[0] = (x842[0] + __shfl_down_sync(0xFFFFFFFF, x842[0], 2));
+              __syncwarp();
+            }
+
+            /* mapLane */
+            /* iteration count is exactly 1, no loop emitted */
+            int lane_id_1506 = (threadIdx.x % 32);
+            x802[0] = (x822[0] + __shfl_down_sync(0xFFFFFFFF, x822[0], 1));
+            __syncwarp();
+          }
+
+          /* mapLane */
+          for (int lane_id_1500 = (threadIdx.x % 32);(lane_id_1500 < 1);lane_id_1500 = (32 + lane_id_1500)) {
+            output[((block_id_1408 + lane_id_1500) + warp_id_1442)] = x802[0];
+          }
+
+          __syncwarp();
+        }
+
+      }
+
+      __syncthreads();
     }
 
-    gen.cuKernel(testKernel, "reduceTest")
   }
+
+  __syncthreads();
+}
+   */
+
 }
