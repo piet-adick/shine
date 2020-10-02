@@ -110,7 +110,7 @@ class ReduceTest extends shine.test_util.Tests {
       // reduceDevice: (n: nat) -> n.f32 -> n/numElemsBlock.f32, where n % numElemsBlock = 0
       nFun((n, numElemsBlock, numElemsWarp) =>
         fun(n `.` f32)(arr =>
-          arr |> reorderWithStride(128) |>
+          arr |> reorderWithStride(32) |>
             split(numElemsBlock) |> // n/numElemsBlock.numElemsBlock.f32
             mapBlock('x')(fun(chunk =>
               chunk |> split(numElemsWarp) |> // numElemsBlock/numElemsWarp.numElemsWarp.f32
@@ -301,7 +301,7 @@ void deviceReduceGenerated(float* __restrict__ output, const float* __restrict__
 
   //Generierter Code mit Coalescing
   /*
-  extern "C" __global__
+extern "C" __global__
 void deviceReduceGenerated(float* __restrict__ output, const float* __restrict__ x0){
   extern __shared__ char dynamicSharedMemory1521[];
   /* mapBlock */
@@ -332,7 +332,7 @@ void deviceReduceGenerated(float* __restrict__ output, const float* __restrict__
                         float x1124;
                         x1124 = 0.0f;
                         for (int i_1486 = 0;(i_1486 < 32);i_1486 = (1 + i_1486)) {
-                          x1124 = (x1124 + x0[(((((i_1486 + (32 * lane_id_1484)) + (1024 * warp_id_1434)) / 16384) + (2 * block_id_1408)) + (128 * (((i_1486 + (32 * lane_id_1484)) + (1024 * warp_id_1434)) % 16384)))]);
+                          x1124 = (x1124 + x0[(((((i_1486 + (32 * lane_id_1484)) + (1024 * warp_id_1434)) + (32768 * block_id_1408)) / 65536) + (32 * ((((i_1486 + (32 * lane_id_1484)) + (1024 * warp_id_1434)) + (32768 * block_id_1408)) % 65536)))]);
                         }
 
                         x1112[0] = x1124;
