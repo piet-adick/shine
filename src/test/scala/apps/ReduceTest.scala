@@ -12,9 +12,8 @@ import util.gen
 class ReduceTest extends shine.test_util.Tests {
 
   val warpSize = 32
-  val srcLanes = generate(fun(IndexType(warpSize))(i => i ))
-
   private val id = fun(x => x)
+
   private def warpReduce(op: Expr): Expr = {
     fun(warpChunk =>
       warpChunk |>
@@ -43,35 +42,47 @@ class ReduceTest extends shine.test_util.Tests {
     )
   }
 
-  test("block reduce w/o reduceSeq"){
+  private def blockReduce(op: Expr): Expr = {
+    fun(blockChunk =>
+      blockChunk |> split(warpSize) |>
+        mapWarp('x')(fun(warpChunk =>
+          warpChunk |>
+            mapLane('x')(id) |>
+            toPrivate |>
+            warpReduce(op)
+        )) |>
+        toLocal |>
+        join |>
+        padCst(0)(warpSize-(1024 / warpSize))(l(0f)) |>
+        split(warpSize) |>
+        mapWarp(warpReduce(op)) |>
+        join
+    )
+  }
+
+  test("device reduce test"){
+
+    val op = fun(f32 x f32)(t => t._1 + t._2)
+
     val deviceTest = {
-
-      val op = fun(f32 x f32)(t => t._1 + t._2)
-
-      // reduceDevice: (n: nat) -> n.f32 -> n/numElemsBlock.f32, where n % numElemsBlock = 0
       nFun(n =>
-        fun(n `.` f32)(blockChunk =>
-          blockChunk |> split(warpSize) |>
-            mapWarp('x')(fun(warpChunk =>
-              warpChunk |>
-                mapLane('x')(id) |>
-                toPrivate |>
-                warpReduce(op)
-            )) |>
-            toLocal |>
-            join |>
-            padCst(0)(warpSize-(n /^ warpSize))(l(0f)) |>
-            split(warpSize) |>
-            mapWarp(warpReduce(op)) |>
-            join
+        fun(n `.` f32)(arr =>
+          arr |>
+            //reorderWithStride(32768) |>
+            split(64) |>
+            mapGlobal(oclReduceSeq(AddressSpace.Private)(add)(l(0f))) |>
+            toPrivate |>
+            //padCst
+            split(1024) |> // n/numElemsBlock.numElemsBlock.f32
+            mapBlock('x')(blockReduce(op))
         )
       )
     }
     //64 blocks, 32 warps each; 32 elems per lane
-    gen.cuKernel(deviceTest(1024), "blockReduceGenerated")
+    gen.cuKernel(deviceTest(2097152), "deviceReduceGenerated")
   }
 
-  test("device reduce test3"){
+  test("device reduce test (chaotic)"){
     val deviceTest = {
 
       val op = fun(f32 x f32)(t => t._1 + t._2)
@@ -79,38 +90,7 @@ class ReduceTest extends shine.test_util.Tests {
       // reduceDevice: (n: nat) -> n.f32 -> n/numElemsBlock.f32, where n % numElemsBlock = 0
       nFun((n, numElemsBlock, numElemsWarp) =>
         fun(n `.` f32)(arr =>
-          arr |> split(numElemsBlock) |> // n/numElemsBlock.numElemsBlock.f32
-            mapBlock('x')(fun(blockChunk =>
-              blockChunk |> split(numElemsWarp /^ warpSize) |>
-                mapThreads('x')(fun(threadChunk =>
-                threadChunk |>
-                  oclReduceSeq(AddressSpace.Private)(add)(l(0f))
-                  )) |>
-                toPrivate |>
-                split(warpSize) |>
-                mapWarp(warpReduce(op)) |>
-                toLocal |> //(k/j).1.f32 where (k/j) = #warps per block
-                join |> //(k/j).f32 where (k/j) = #warps per block
-                padCst(0)(warpSize-(numElemsBlock /^ numElemsWarp))(l(0f)) |> //32.f32
-                split(warpSize) |> //1.32.f32 in order to execute following reduction with one warp
-                mapWarp(warpReduce(op)) |>
-                join
-            ))
-        ))
-    }
-    //64 blocks, 32 warps each; 32 elems per lane
-    gen.cuKernel(deviceTest(2097152)(32768)(1024), "deviceReduceGenerated")
-  }
-
-  test("device reduce test"){
-    val deviceTest = {
-
-      val op = fun(f32 x f32)(t => t._1 + t._2)
-
-      // reduceDevice: (n: nat) -> n.f32 -> n/numElemsBlock.f32, where n % numElemsBlock = 0
-      nFun((n, numElemsBlock, numElemsWarp) =>
-        fun(n `.` f32)(arr =>
-          arr |> reorderWithStride(32) |>
+          arr |> reorderWithStride(warpSize*(numElemsBlock /^ numElemsWarp) * (n /^ numElemsBlock)) |>
             split(numElemsBlock) |> // n/numElemsBlock.numElemsBlock.f32
             mapBlock('x')(fun(chunk =>
               chunk |> split(numElemsWarp) |> // numElemsBlock/numElemsWarp.numElemsWarp.f32
@@ -120,7 +100,8 @@ class ReduceTest extends shine.test_util.Tests {
                       threadChunk |>
                         oclReduceSeq(AddressSpace.Private)(add)(l(0f))
                     )) |> toPrivate |>
-                    warpReduce(op))) |> toLocal |> //(k/j).1.f32 where (k/j) = #warps per block
+                    warpReduce(op)
+                )) |> toLocal |> //(k/j).1.f32 where (k/j) = #warps per block
                 join |> //(k/j).f32 where (k/j) = #warps per block
                 padCst(0)(warpSize-(numElemsBlock /^ numElemsWarp))(l(0f)) |> //32.f32
                 split(warpSize) |> //1.32.f32 in order to execute following reduction with one warp
