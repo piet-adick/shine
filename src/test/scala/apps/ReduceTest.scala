@@ -14,20 +14,21 @@ class ReduceTest extends shine.test_util.Tests {
   val warpSize = 32
   private val id = fun(x => x)
 
+  // 32.f32 -> 1.f32
   private def warpReduce(op: Expr): Expr = {
     fun(warpChunk =>
       warpChunk |>
-        toPrivateFun(mapLane(id)) |> //32.f32
+        toPrivateFun(mapLane('x')(id)) |> //32.f32
         let(fun(x => zip(x, x |> shflDownWarp(16)))) |> //32.(f32 x f32)
-        toPrivateFun(mapLane(op)) |> //32.f32
+        toPrivateFun(mapLane('x')(op)) |> //32.f32
         let(fun(x => zip(x, x |> shflDownWarp(8)))) |> //32.(f32 x f32)
-        toPrivateFun(mapLane(op)) |> //32.f32
+        toPrivateFun(mapLane('x')(op)) |> //32.f32
         let(fun(x => zip(x, x |> shflDownWarp(4)))) |> //32.(f32 x f32)
-        toPrivateFun(mapLane(op)) |> //32.f32
+        toPrivateFun(mapLane('x')(op)) |> //32.f32
         let(fun(x => zip(x, x |> shflDownWarp(2)))) |> //32.(f32 x f32)
-        toPrivateFun(mapLane(op)) |> //32.f32
+        toPrivateFun(mapLane('x')(op)) |> //32.f32
         let(fun(x => zip(x, x |> shflDownWarp(1)))) |> //32.(f32 x f32)
-        toPrivateFun(mapLane(op)) |> //32.f32
+        toPrivateFun(mapLane('x')(op)) |> //32.f32
         // Take the SUBarray consisting of 1 element(s) starting from
         // the beginning of the array.
         take(1) |> //1.f32
@@ -38,25 +39,29 @@ class ReduceTest extends shine.test_util.Tests {
         // and then we need to copy with idx from that single element array. But the element returned from idx is
         // then copied by the entire warp again!
         // So instead, we need to just return the single element arrays.
-        mapLane(id) //1.f32
+        mapLane('x')(id) //1.f32
     )
   }
 
+  // n.f32 -> f32
   private def blockReduce(op: Expr): Expr = {
-    fun(blockChunk =>
-      blockChunk |> split(warpSize) |>
-        mapWarp('x')(fun(warpChunk =>
-          warpChunk |>
-            mapLane('x')(id) |>
-            toPrivate |>
-            warpReduce(op)
-        )) |>
-        toLocal |>
-        join |>
-        padCst(0)(warpSize-(1024 / warpSize))(l(0f)) |>
-        split(warpSize) |>
-        mapWarp(warpReduce(op)) |>
-        join
+    implN(n =>
+      fun(n `.` f32)(blockChunk =>
+        blockChunk |> padCst(0)(warpSize-(n%warpSize))(l(0f)) |>
+          split(warpSize) |>
+          mapWarp('x')(fun(warpChunk =>
+            warpChunk |>
+              mapLane('x')(id) |>
+              toPrivate |>
+              warpReduce(op)
+          )) |>
+          toLocal |>
+          join |>
+          padCst(0)(32-(n / warpSize))(l(0f)) |>
+          split(32) |>
+          mapWarp('x')(warpReduce(op)) |>
+          join
+      )
     )
   }
 
@@ -68,18 +73,19 @@ class ReduceTest extends shine.test_util.Tests {
       nFun(n =>
         fun(n `.` f32)(arr =>
           arr |>
-            //reorderWithStride(32768) |>
+            //padCst(0)(64-(n%64))(l(0f)) |>
+            //reorderWithStride(blockDim.x*gridDim.x) |>
             split(64) |>
-            mapGlobal(oclReduceSeq(AddressSpace.Private)(add)(l(0f))) |>
+            mapGlobal('x')(oclReduceSeq(AddressSpace.Private)(add)(l(0f))) |>
             toPrivate |>
-            //padCst
-            split(1024) |> // n/numElemsBlock.numElemsBlock.f32
+            padCst(0)(1024-(n%1024))(l(0f)) |>
+            split(1024) |>
             mapBlock('x')(blockReduce(op))
         )
       )
     }
     //64 blocks, 32 warps each; 32 elems per lane
-    gen.cuKernel(deviceTest(2097152), "deviceReduceGenerated")
+    gen.cuKernel(deviceTest, "deviceReduceGenerated")
   }
 
   test("device reduce test (chaotic)"){
