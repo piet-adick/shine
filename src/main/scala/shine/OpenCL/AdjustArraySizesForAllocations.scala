@@ -8,6 +8,7 @@ import shine.DPIA.Types._
 import shine.DPIA._
 import shine.OpenCL.FunctionalPrimitives._
 import shine.OpenCL.ImperativePrimitives._
+import shine.cuda.globalDim
 import shine.cuda.primitives.functional.{MapBlock, MapLane, MapThreads, MapWarp}
 
 object AdjustArraySizesForAllocations {
@@ -159,7 +160,7 @@ object AdjustArraySizesForAllocations {
     (parallLevel, addrSpace) match {
       case (Global, AddressSpace.Global) => 1
       case (Global, AddressSpace.Local) => ???
-      case (Global, AddressSpace.Private) => get_global_size(dim)
+      case (Global, AddressSpace.Private) => globalDim(dim.asInstanceOf[Char])
       case (WorkGroup, AddressSpace.Global) => 1
       case (WorkGroup, _) => ???
       case (Local, AddressSpace.Private) => get_local_size(dim)
@@ -195,7 +196,7 @@ object AdjustArraySizesForAllocations {
 
 
           case (BasicInfo(Global, dim), AddressSpace.Private) =>
-            ArrayType(ceilingDiv(n, get_global_size(dim)), adjustedSizeDataType(elemType, is, addrSpace))
+            ArrayType(ceilingDiv(n, globalDim(dim.asInstanceOf[Char])), adjustedSizeDataType(elemType, is, addrSpace))
 
           case (BasicInfo(WorkGroup, dim), AddressSpace.Private) =>
             ArrayType(ceilingDiv(n, get_num_groups(dim)), adjustedSizeDataType(elemType, is, addrSpace))

@@ -75,7 +75,7 @@ object TypeCheck {
 
   def check(found: PhraseType, expected: PhraseType): Unit = {
     if (found != expected) {
-      error(found, expected)
+       error(found, expected)
     }
   }
 

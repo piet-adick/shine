@@ -3,7 +3,6 @@ package shine.cuda
 import arithexpr.arithmetic.{
   ArithExprFunctionCall, Range, RangeUnknown, Sign, SimplifiedExpr}
 import shine.DPIA.Nat
-import shine.OpenCL.BuiltInFunctionCall
 
 class BuiltInAttribute private(name: String, val param: Char, range: Range)
   extends ArithExprFunctionCall(name, range) {
@@ -15,7 +14,7 @@ class BuiltInAttribute private(name: String, val param: Char, range: Range)
   override val HashSeed = 0x31111111
 
   override def equals(that: Any): Boolean = that match {
-    case f: BuiltInFunctionCall =>
+    case f: BuiltInAttribute =>
       this.name.equals(f.name) && this.param == f.param
     case _ => false
   }

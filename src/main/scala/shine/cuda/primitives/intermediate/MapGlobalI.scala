@@ -13,7 +13,7 @@ final case class MapGlobalI(dim: Char = 'x') {
             in: Phrase[ExpType],
             out: Phrase[AccType]): Phrase[CommType] =
   {
-    comment("mapGrid")`;`
+    comment("mapGlobal")`;`
       ParForGlobal(dim)(n, dt2, out, λ(expT(idx(n), read))(i => λ(accT(dt2))(a => {
         f(in `@` i)(a)
       })))

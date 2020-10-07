@@ -58,8 +58,8 @@ class ReduceTest extends shine.test_util.Tests {
           )) |>
           toLocal |>
           join |>
-          padCst(0)(32-(n / warpSize))(l(0f)) |> // pad to warpSize
-          split(32) |>
+          padCst(0)(warpSize-(n / warpSize))(l(0f)) |> // pad to warpSize
+          split(warpSize) |>
           mapWarp('x')(warpReduce(op)) |>
           join
       )
@@ -79,7 +79,7 @@ class ReduceTest extends shine.test_util.Tests {
       )
     }
 
-    gen.cuKernel(blockTest(1024), "blockReduceGenerated")
+    gen.cuKernel(blockTest, "blockReduceGenerated")
   }
 
   test("device reduce test"){
@@ -93,17 +93,21 @@ class ReduceTest extends shine.test_util.Tests {
             // pad to next multiple of 64 (ArithExpr doesn't simplify this properly)
             // needed to support any input size
             padCst(0)((64-(n%64))%64)(l(0f)) |>
-            // needed for coalescing
-            split(64) |>
-            transpose |>
-            join |>
 
-            split(64) |>
+            // needed for coalescing
+            //split(64) |>
+            //transpose |>
+            //join |>
+            //split(64) |>
+            //mapGlobal('x')(oclReduceSeq(AddressSpace.Private)(add)(l(0f))) |>
+            //toPrivate |>
+
+            split(shine.cuda.globalDim('x')) |>
+            transpose |>
             mapGlobal('x')(oclReduceSeq(AddressSpace.Private)(add)(l(0f))) |>
             toPrivate |>
-
             // pad to next multiple of 1024 (ArithExpr doesn't simplify this properly)
-            padCst(0)((1024-(n%1024))%1024)(l(0f)) |>
+            //padCst(0)((1024-(n%1024))%1024)(l(0f)) |>
             split(1024) |>
             mapBlock('x')(blockReduce(op))
         )
@@ -111,6 +115,39 @@ class ReduceTest extends shine.test_util.Tests {
     }
 
     gen.cuKernel(deviceTest, "deviceReduceGenerated")
+  }
+
+  test("device reduce test (chaotic)2"){
+    val deviceTest = {
+
+      val op = fun(f32 x f32)(t => t._1 + t._2)
+
+      // reduceDevice: (n: nat) -> n.f32 -> n/numElemsBlock.f32, where n % numElemsBlock = 0
+      nFun((numElemsBlock, numElemsWarp, n) =>
+        fun(n `.` f32)(arr =>
+          arr |> //padCst(0)((numElemsBlock-(n%numElemsBlock))%numElemsBlock)(l(0f)) |>
+            split(numElemsBlock) |> // n/numElemsBlock.numElemsBlock.f32
+            mapBlock('x')(fun(chunk =>
+              chunk |> split(numElemsWarp) |> // numElemsBlock/numElemsWarp.numElemsWarp.f32
+                mapWarp('x')(fun(warpChunk =>
+                  warpChunk |> split(warpSize) |> // warpSize.numElemsWarp/warpSize.f32
+                    transpose |>
+                    mapLane(fun(threadChunk =>
+                      threadChunk |>
+                        oclReduceSeq(AddressSpace.Private)(add)(l(0f))
+                    )) |> toPrivate |>
+                    warpReduce(op)
+                )) |> toLocal |> //(k/j).1.f32 where (k/j) = #warps per block
+                join |> //(k/j).f32 where (k/j) = #warps per block
+                padCst(0)(warpSize-(numElemsBlock /^ numElemsWarp))(l(0f)) |> //32.f32
+                split(warpSize) |> //1.32.f32 in order to execute following reduction with one warp
+                mapWarp(warpReduce(op)) |>
+                join
+            ))
+        ))
+    }
+    //64 blocks, 32 warps each; 32 elems per lane
+    gen.cuKernel(deviceTest(8192)(256), "deviceReduceGenerated")
   }
 
   test("device reduce test (chaotic)"){
