@@ -121,6 +121,26 @@ class ReduceTest extends shine.test_util.Tests {
     gen.cuKernel(blockTest, "blockReduceGenerated")
   }
 
+  test("shflDown test"){
+    //val op = fun(f32 x f32)(t => t._1 + t._2)
+
+    val shflDownTest = {
+      nFun(n =>
+        fun(n `.` f32)(arr =>
+          arr |> split(32) |>
+            mapWarp('x')(fun(warpChunk =>
+              warpChunk |>
+                toPrivateFun(mapLane('x')(id)) |>
+                shflDownWarp(1) |>
+                mapLane('x')(id)
+            ))
+        )
+      )
+    }
+
+    gen.cuKernel(shflDownTest, "shflDownGenerated")
+  }
+
 
 
   test("device reduce test (naive smem)"){
@@ -161,7 +181,8 @@ class ReduceTest extends shine.test_util.Tests {
           arr |> padCst(0)((elemsBlock-(n%elemsBlock))%elemsBlock)(l(0f)) |>
             split(elemsBlock) |>
             mapBlock('x')(fun(chunk =>
-              chunk |> split(elemsBlock/^1024) |>
+              chunk |> split(1024) |>
+                transpose |>
                 mapThreads('x')(fun(seqChunk =>
                   seqChunk |>
                     oclReduceSeqUnroll(AddressSpace.Private)(add)(l(0f))
